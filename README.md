@@ -4,7 +4,7 @@
 
 ## What This Plugin Adds
 
-Exception Reports is an **Available**, **No schema impact** Capell package in the **Capell Operations** product group. It ships as `capell-app/exception-reports` and extends these surfaces: console, shared.
+Exception Reports is an **Available**, **Schema-owning** Capell package in the **Capell Operations** product group. It ships as `capell-app/exception-reports` and extends these surfaces: console, shared.
 
 Exception Reports queues sanitized unhandled-exception reports to configured email recipients and optional signed webhook endpoints, with rate limiting and grouped digests.
 
@@ -35,32 +35,73 @@ Screenshot contract: `docs/screenshots.json`.
 
 ![Exception Reports extension card](docs/screenshots/extension-card.svg)
 
-- Exception Reports extension card (marketplace, required).
-- Exception Reports rendered email preview remains diagnostic-only until a route-backed package fixture has a matching runner receipt.
+- Exception Reports extension card (marketplace, required evidence).
+- Illustrative exception reports rendered email preview preview (frontend, supplementary documentation fixture).
 
 ## Technical Shape
 
-- Service providers: `Capell\ExceptionReports\Providers\ExceptionReportsServiceProvider`.
-- Config files: `packages/exception-reports/config/capell-exception-reports.php`.
-- Actions: `QueueRateLimitedExceptionDigestAction`, `ReportExceptionByEmailAction`, `SendExceptionReportWebhookAction`.
-- Data objects: `ExceptionReportData`, `ResolvedExceptionReportWebhookEndpointData`.
-- Manifest action API: `reportExceptionByEmail: Capell\ExceptionReports\Actions\ReportExceptionByEmailAction`.
-- Manifest contributions: `health-check: Capell\ExceptionReports\Health\ExceptionReportsHealthCheck`.
-- Health checks: `Capell\ExceptionReports\Health\ExceptionReportsHealthCheck`.
-- Blade views: `packages/exception-reports/resources/views/mail/reported.blade.php`.
+### Service providers
+
+- `Capell\ExceptionReports\Providers\ExceptionReportsServiceProvider`
+
+### Config files
+
+- `packages/exception-reports/config/capell-exception-reports.php`
+
+### Migrations
+
+- `packages/exception-reports/database/migrations/2026_08_22_000001_create_exception_reports_table.php`
+
+### Models
+
+- `ExceptionReport`
+
+### Actions
+
+- `QueueRateLimitedExceptionDigestAction`
+- `RecordExceptionReportAction`
+- `ReportExceptionByEmailAction`
+- `SendExceptionReportWebhookAction`
+
+### Data objects
+
+- `ExceptionReportData`
+- `ResolvedExceptionReportWebhookEndpointData`
+
+### Manifest action API
+
+- `recordExceptionReport: Capell\ExceptionReports\Actions\RecordExceptionReportAction`
+- `reportExceptionByEmail: Capell\ExceptionReports\Actions\ReportExceptionByEmailAction`
+
+### Manifest contributions
+
+- `health-check: Capell\ExceptionReports\Health\ExceptionReportsHealthCheck`
+
+### Health checks
+
+- `Capell\ExceptionReports\Health\ExceptionReportsHealthCheck`
+
+### Blade views
+
+- `packages/exception-reports/resources/views/mail/reported.blade.php`
+
 
 ## Data Model
 
-This package has no schema impact. It extends Capell through `health-check` contributions instead of declaring package-owned tables.
+- Required tables: `exception_reports`.
+- Models: `ExceptionReport`.
+- Migration files: `2026_08_22_000001_create_exception_reports_table.php`.
+- Migration impact: run host migrations through the package install flow before opening package surfaces.
+- Deletion/retention behaviour: Docs gap: migrations and manifest contributions do not prove a cascade, pruning command, or timed retention policy.
 
 ## Install Impact
 
 - Required packages: `capell-app/core`.
 - Admin navigation: no admin page or resource contribution is declared.
 - Admin/editor extensions: none declared.
-- Permissions: none declared in `capell.json`.
+- Permissions: no package permission declarations or Shield gates detected; host access rules still apply.
 - Public routes: none declared.
-- Database changes: no package migrations declared.
+- Database changes: package migrations are declared.
 - Config: `config/capell-exception-reports.php`.
 - Settings: no package settings declared.
 - Queues or schedules: none declared.
@@ -70,6 +111,7 @@ This package has no schema impact. It extends Capell through `health-check` cont
 ## Common Pitfalls
 
 - Keep required Capell packages on compatible v4 releases: `capell-app/core`.
+- Run migrations before opening package resources or public routes.
 - Review package configuration before production-like verification: `config/capell-exception-reports.php`.
 
 ## Troubleshooting
@@ -77,12 +119,12 @@ This package has no schema impact. It extends Capell through `health-check` cont
 | Symptom | Likely cause | Check | Fix |
 | --- | --- | --- | --- |
 | Package surface is missing after install | Provider or manifest is not loaded | Confirm `capell.json`, package `composer.json`, and provider registration | Reinstall the package, refresh Composer autoload, and clear host caches |
+| Admin screen or command fails on missing table | Package migrations have not run | Check the tables listed in `Data Model` | Run host migrations and rerun the focused package test |
 
 ## Quick Start
 
 1. Install the package: `composer require capell-app/exception-reports`.
-2. Review `config/capell-exception-reports.php` before enabling the package.
-3. Open the package detail or install-intent surface and confirm the Exception Reports extension card is present.
+2. Open the package detail or install-intent surface and confirm the Exception Reports extension card is present.
 
 ## Next Steps
 
