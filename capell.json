@@ -50,12 +50,7 @@
     },
     "settings": [],
     "permissions": [],
-    "capabilities": [
-        "exception-reports",
-        "exception-reports-email",
-        "exception-reports-sanitized-diagnostics",
-        "exception-reports-rate-limited"
-    ],
+    "capabilities": ["transactional-email"],
     "performance": {
         "frontendRenderBudgetMs": 0,
         "adminQueryBudget": 0,

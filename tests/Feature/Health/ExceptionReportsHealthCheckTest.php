@@ -13,7 +13,7 @@ it('passes package health checks when configured', function (): void {
 });
 
 it('fails the recipient health check when no recipient is configured', function (): void {
-    config()->set('capell-exception-reports.recipient', null);
+    config()->set('capell-exception-reports.recipient');
 
     $result = (new ExceptionReportsHealthCheck)->recipientConfiguredCheck();
 

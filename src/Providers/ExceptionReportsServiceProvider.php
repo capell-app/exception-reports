@@ -57,7 +57,7 @@ final class ExceptionReportsServiceProvider extends AbstractPackageServiceProvid
             }
 
             try {
-                app(ReportExceptionByEmailAction::class)->handle($exception);
+                resolve(ReportExceptionByEmailAction::class)->handle($exception);
             } catch (Throwable) {
                 //
             }

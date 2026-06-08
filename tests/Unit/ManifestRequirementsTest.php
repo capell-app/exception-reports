@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Capell\Core\Contracts\Extensions\ChecksExtensionHealth;
+use Capell\Core\Enums\PackageCapability;
 use Capell\Core\Support\Manifest\ManifestValidator;
 use Capell\ExceptionReports\Actions\ReportExceptionByEmailAction;
 use Capell\ExceptionReports\Health\ExceptionReportsHealthCheck;
@@ -111,6 +112,7 @@ it('declares extension metadata and runtime provider', function (): void {
     $manifest = exceptionReportsJsonFileArray(__DIR__ . '/../../capell.json');
     $providers = exceptionReportsManifestArray($manifest, 'providers');
     $actions = exceptionReportsManifestArray($manifest, 'actions');
+    $capabilities = exceptionReportsManifestList($manifest, 'capabilities');
     $marketplace = exceptionReportsManifestArray($manifest, 'marketplace');
     $traceability = exceptionReportsManifestArray($manifest, 'contributionTraceability');
     $contributes = exceptionReportsManifestObjectList($manifest, 'contributes');
@@ -128,6 +130,7 @@ it('declares extension metadata and runtime provider', function (): void {
             ],
         ])
         ->and($manifest['surfaces'])->toContain('shared')
+        ->and($capabilities)->toBe([PackageCapability::TransactionalEmail->value])
         ->and(exceptionReportsManifestList($providers, 'runtime'))->toContain(ExceptionReportsServiceProvider::class)
         ->and($actions)->toHaveKey('reportExceptionByEmail', ReportExceptionByEmailAction::class)
         ->and($contributes)->toContain([
@@ -158,16 +161,12 @@ it('validates the manifest and marketplace assets', function (): void {
 
     $screenshotManifest = json_decode(File::get($packagePath . '/docs/screenshots.json'), associative: true, flags: JSON_THROW_ON_ERROR);
 
-    if (! is_array($screenshotManifest) || ! array_is_list($screenshotManifest)) {
-        throw new RuntimeException('Expected docs/screenshots.json to contain a list.');
-    }
+    throw_if(! is_array($screenshotManifest) || ! array_is_list($screenshotManifest), RuntimeException::class, 'Expected docs/screenshots.json to contain a list.');
 
     expect($screenshotManifest)->not->toBeEmpty();
 
     foreach ($screenshotManifest as $screenshot) {
-        if (! is_array($screenshot)) {
-            throw new RuntimeException('Expected docs/screenshots.json entries to be objects.');
-        }
+        throw_unless(is_array($screenshot), RuntimeException::class, 'Expected docs/screenshots.json entries to be objects.');
 
         expect(File::exists($packagePath . '/' . exceptionReportsManifestString($screenshot, 'path')))->toBeTrue();
     }

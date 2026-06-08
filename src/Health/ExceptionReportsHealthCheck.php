@@ -114,7 +114,7 @@ final class ExceptionReportsHealthCheck implements ChecksExtensionHealth
     private function handlerCanRegisterReportables(): bool
     {
         try {
-            $handler = app(ExceptionHandlerContract::class);
+            $handler = resolve(ExceptionHandlerContract::class);
 
             return method_exists($handler, 'reportable');
         } catch (Throwable) {
