@@ -18,6 +18,9 @@
             "providers": [
                 "Capell\\ExceptionReports\\Providers\\ExceptionReportsServiceProvider"
             ]
+        },
+        "branch-alias": {
+            "dev-main": "4.x-dev"
         }
     },
     "require": {
