@@ -1,0 +1,31 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'default_subject' => 'Unhandled exception reported',
+    'unsafe_warning' => 'Unsafe diagnostic content was stripped.',
+    'affected_fields' => 'Affected fields: :fields',
+    'intro' => 'An unhandled exception was reported in :app.',
+    'environment' => 'Environment',
+    'exception' => 'Exception',
+    'message' => 'Message',
+    'location' => 'Location',
+    'reported_at' => 'Reported at',
+    'request' => 'Request',
+    'method' => 'Method',
+    'url' => 'URL',
+    'route' => 'Route',
+    'action' => 'Action',
+    'referer' => 'Referer',
+    'browser' => 'Browser',
+    'ip_address' => 'IP address',
+    'accept' => 'Accept',
+    'request_id' => 'Request ID',
+    'user' => 'User',
+    'id' => 'ID',
+    'name' => 'Name',
+    'email' => 'Email',
+    'route_parameters' => 'Route Parameters',
+    'stack_trace' => 'Stack Trace',
+];

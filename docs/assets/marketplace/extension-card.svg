@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Exception Reports extension card</title>
+  <desc id="desc">A marketplace preview card for Capell Exception Reports.</desc>
+  <rect width="1200" height="675" fill="#111827"/>
+  <rect x="72" y="72" width="1056" height="531" rx="24" fill="#f8fafc"/>
+  <rect x="112" y="112" width="360" height="451" rx="18" fill="#fee2e2"/>
+  <path d="M292 176l132 228H160L292 176z" fill="#dc2626"/>
+  <rect x="276" y="258" width="32" height="88" rx="16" fill="#fff"/>
+  <circle cx="292" cy="382" r="18" fill="#fff"/>
+  <text x="520" y="188" fill="#111827" font-family="Inter, Arial, sans-serif" font-size="56" font-weight="700">Exception Reports</text>
+  <text x="520" y="252" fill="#374151" font-family="Inter, Arial, sans-serif" font-size="28">Sanitized email alerts for unhandled Capell exceptions.</text>
+  <rect x="520" y="320" width="520" height="64" rx="12" fill="#e5e7eb"/>
+  <rect x="548" y="344" width="240" height="16" rx="8" fill="#6b7280"/>
+  <rect x="520" y="408" width="520" height="64" rx="12" fill="#e5e7eb"/>
+  <rect x="548" y="432" width="328" height="16" rx="8" fill="#6b7280"/>
+  <rect x="520" y="496" width="320" height="46" rx="23" fill="#dc2626"/>
+  <text x="548" y="528" fill="#fff" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700">Operations ready</text>
+</svg>

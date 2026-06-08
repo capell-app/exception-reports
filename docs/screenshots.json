@@ -1,0 +1,16 @@
+[
+    {
+        "name": "exception-reports-extension-card",
+        "path": "docs/assets/marketplace/extension-card.svg",
+        "surface": "marketplace",
+        "caption": "Exception Reports extension preview for Marketplace cards.",
+        "notes": "Illustrative committed asset until the package screenshot runner captures real mail output."
+    },
+    {
+        "name": "exception-reports-email-preview",
+        "path": "docs/assets/marketplace/exception-email-preview.svg",
+        "surface": "email",
+        "caption": "Sanitized exception email showing request, route, user, and stack trace context.",
+        "notes": "Illustrative committed asset until a deterministic mail preview capture is available."
+    }
+]
