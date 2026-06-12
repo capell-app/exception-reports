@@ -96,6 +96,29 @@ function exceptionReportsManifestObjectList(array $values, string $key): array
 
 /**
  * @param  array<array-key, mixed>  $values
+ * @return list<array<array-key, mixed>>
+ */
+function exceptionReportsScreenshotEntries(array $values): array
+{
+    if (array_is_list($values)) {
+        $items = $values;
+    } else {
+        $items = exceptionReportsManifestList($values, 'entries');
+    }
+
+    $objects = [];
+
+    foreach ($items as $item) {
+        throw_unless(is_array($item), RuntimeException::class, 'Expected docs/screenshots.json entries to be objects.');
+
+        $objects[] = $item;
+    }
+
+    return $objects;
+}
+
+/**
+ * @param  array<array-key, mixed>  $values
  */
 function exceptionReportsManifestString(array $values, string $key): string
 {
@@ -161,13 +184,13 @@ it('validates the manifest and marketplace assets', function (): void {
 
     $screenshotManifest = json_decode(File::get($packagePath . '/docs/screenshots.json'), associative: true, flags: JSON_THROW_ON_ERROR);
 
-    throw_if(! is_array($screenshotManifest) || ! array_is_list($screenshotManifest), RuntimeException::class, 'Expected docs/screenshots.json to contain a list.');
+    throw_if(! is_array($screenshotManifest), RuntimeException::class, 'Expected docs/screenshots.json to contain a JSON object or list.');
 
-    expect($screenshotManifest)->not->toBeEmpty();
+    $screenshotEntries = exceptionReportsScreenshotEntries($screenshotManifest);
 
-    foreach ($screenshotManifest as $screenshot) {
-        throw_unless(is_array($screenshot), RuntimeException::class, 'Expected docs/screenshots.json entries to be objects.');
+    expect($screenshotEntries)->not->toBeEmpty();
 
+    foreach ($screenshotEntries as $screenshot) {
         expect(File::exists($packagePath . '/' . exceptionReportsManifestString($screenshot, 'path')))->toBeTrue();
     }
 });
