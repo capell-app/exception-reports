@@ -1,18 +1,88 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
-  <title id="title">Exception Reports extension card</title>
-  <desc id="desc">A marketplace preview card for Capell Exception Reports.</desc>
-  <rect width="1200" height="675" fill="#111827"/>
-  <rect x="72" y="72" width="1056" height="531" rx="24" fill="#f8fafc"/>
-  <rect x="112" y="112" width="360" height="451" rx="18" fill="#fee2e2"/>
-  <path d="M292 176l132 228H160L292 176z" fill="#dc2626"/>
-  <rect x="276" y="258" width="32" height="88" rx="16" fill="#fff"/>
-  <circle cx="292" cy="382" r="18" fill="#fff"/>
-  <text x="520" y="188" fill="#111827" font-family="Inter, Arial, sans-serif" font-size="56" font-weight="700">Exception Reports</text>
-  <text x="520" y="252" fill="#374151" font-family="Inter, Arial, sans-serif" font-size="28">Sanitized email alerts for unhandled Capell exceptions.</text>
-  <rect x="520" y="320" width="520" height="64" rx="12" fill="#e5e7eb"/>
-  <rect x="548" y="344" width="240" height="16" rx="8" fill="#6b7280"/>
-  <rect x="520" y="408" width="520" height="64" rx="12" fill="#e5e7eb"/>
-  <rect x="548" y="432" width="328" height="16" rx="8" fill="#6b7280"/>
-  <rect x="520" y="496" width="320" height="46" rx="23" fill="#dc2626"/>
-  <text x="548" y="528" fill="#fff" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700">Operations ready</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Exception Reports marketplace artwork</title>
+  <desc id="desc">Send useful failure context to operators without exposing unsafe details.</desc>
+  <defs>
+    <pattern id="grid-exception-reports-extensionCard" width="28" height="28" patternUnits="userSpaceOnUse">
+      <path d="M28 0H0V28" fill="none" stroke="#cbd5e1" stroke-width="1" opacity="0.42"/>
+      <circle cx="4" cy="4" r="1.4" fill="#94a3b8" opacity="0.35"/>
+    </pattern>
+  </defs>
+  <rect width="1280" height="720" fill="#ffffff"/>
+  <rect width="1280" height="720" fill="url(#grid-exception-reports-extensionCard)"/>
+  <path d="M691.2 0H1280V720H870.4000000000001C691.2 518.4 614.4 259.2 691.2 0Z" fill="#e11d48" opacity="0.08"/>
+  <path d="M0 590.4C307.2 518.4 537.6 676.8 1280 561.6V720H0Z" fill="#f97316" opacity="0.08"/>
+  <g transform="translate(64 64)">
+    <text x="0" y="0" fill="#e11d48" font-family="Helvetica, Arial, sans-serif" font-size="18" font-weight="800" letter-spacing="0">OPERATIONS</text>
+    <text x="0" y="58" fill="#111827" font-family="Helvetica, Arial, sans-serif" font-size="58" font-weight="800" letter-spacing="0">Exception</text>
+    <text x="0" y="118.32" fill="#111827" font-family="Helvetica, Arial, sans-serif" font-size="58" font-weight="800" letter-spacing="0">Reports</text>
+    <text x="0" y="142" fill="#475569" font-family="Helvetica, Arial, sans-serif" font-size="27" letter-spacing="0">Send useful failure context to</text>
+    <text x="0" y="177.64" fill="#475569" font-family="Helvetica, Arial, sans-serif" font-size="27" letter-spacing="0">operators without exposing unsafe...</text>
+    <g transform="translate(0 530)">
+    <line x1="0" y1="34" x2="461" y2="34" stroke="#111827" stroke-width="4"/>
+    <g transform="translate(0 0)">
+      <rect x="0" y="0" width="131.66666666666666" height="68" fill="#ffffff" stroke="#111827" stroke-width="3"/>
+      <rect x="12" y="-10" width="28" height="28" fill="#e11d48" stroke="#111827" stroke-width="3"/>
+      <text x="54" y="28" fill="#111827" font-family="Helvetica, Arial, sans-serif" font-size="20" font-weight="800">1</text>
+      <text x="12" y="54" fill="#475569" font-family="Helvetica, Arial, sans-serif" font-size="16" font-weight="700">CATCH</text>
+    </g>
+    <g transform="translate(153.66666666666666 0)">
+      <rect x="0" y="0" width="131.66666666666666" height="68" fill="#ffffff" stroke="#111827" stroke-width="3"/>
+      <rect x="12" y="-10" width="28" height="28" fill="#f97316" stroke="#111827" stroke-width="3"/>
+      <text x="54" y="28" fill="#111827" font-family="Helvetica, Arial, sans-serif" font-size="20" font-weight="800">2</text>
+      <text x="12" y="54" fill="#475569" font-family="Helvetica, Arial, sans-serif" font-size="16" font-weight="700">SANITIZE</text>
+    </g>
+    <g transform="translate(307.3333333333333 0)">
+      <rect x="0" y="0" width="131.66666666666666" height="68" fill="#ffffff" stroke="#111827" stroke-width="3"/>
+      <rect x="12" y="-10" width="28" height="28" fill="#27272a" stroke="#111827" stroke-width="3"/>
+      <text x="54" y="28" fill="#111827" font-family="Helvetica, Arial, sans-serif" font-size="20" font-weight="800">3</text>
+      <text x="12" y="54" fill="#475569" font-family="Helvetica, Arial, sans-serif" font-size="16" font-weight="700">NOTIFY</text>
+    </g>
+  </g>
+  </g>
+  <g transform="translate(549 64)">
+    <g>
+    <rect x="0" y="28" width="414" height="346" fill="#111827"/>
+    <rect x="14" y="42" width="386" height="318" fill="#f8fafc"/>
+    <g>
+    <rect x="14" y="42" width="386" height="318" fill="#f8fafc"/>
+    <rect x="38" y="68" width="338" height="24" fill="#e11d48"/>
+    <rect x="38" y="116" width="212" height="18" fill="#475569"/>
+    <rect x="38" y="156" width="290" height="14" fill="#cbd5e1"/>
+    <rect x="38" y="190" width="252" height="14" fill="#cbd5e1"/>
+    <rect x="276" y="116" width="100" height="200" fill="#ffffff" stroke="#111827" stroke-width="3"/>
+    <g transform="translate(300 286)"><path d="M0 25.52H9.68L14.96 10.559999999999999L22 36.08L27.28 20.240000000000002H44" fill="none" stroke="#e11d48" stroke-width="7"/><circle cx="36.08" cy="10.559999999999999" r="5.720000000000001" fill="#ffffff" stroke="#111827" stroke-width="4"/></g>
+  </g>
+    <rect x="332" y="332" width="74" height="38" fill="#e11d48" stroke="#111827" stroke-width="3"/>
+  </g>
+    <g>
+    <rect x="300" y="158" width="293" height="259" fill="#111827"/>
+    <rect x="314" y="172" width="265" height="231" fill="#f8fafc"/>
+    <g>
+    <rect x="314" y="172" width="265" height="231" fill="#f8fafc"/>
+    <rect x="338" y="198" width="217" height="24" fill="#f97316"/>
+    <rect x="338" y="246" width="146" height="18" fill="#475569"/>
+    <rect x="338" y="286" width="169" height="14" fill="#cbd5e1"/>
+    <rect x="338" y="320" width="131" height="14" fill="#cbd5e1"/>
+    <rect x="486" y="246" width="69" height="113" fill="#ffffff" stroke="#111827" stroke-width="3"/>
+    <g transform="translate(510 329)"><path d="M0 25.52H9.68L14.96 10.559999999999999L22 36.08L27.28 20.240000000000002H44" fill="none" stroke="#f97316" stroke-width="7"/><circle cx="36.08" cy="10.559999999999999" r="5.720000000000001" fill="#ffffff" stroke="#111827" stroke-width="4"/></g>
+  </g>
+    <rect x="511" y="375" width="58" height="30" fill="#f97316" stroke="#111827" stroke-width="3"/>
+  </g>
+    <g transform="translate(53 346)">
+    <rect x="0" y="145.44" width="367" height="8" fill="#111827"/>
+    <polygon points="190.84,4.04 344.97999999999996,52.52 344.97999999999996,149.48 190.84,197.96 36.7,149.48 36.7,52.52" fill="#e11d48" stroke="#111827" stroke-width="7"/>
+    <circle cx="102.76" cy="64.64" r="9.09" fill="#ffffff" stroke="#111827" stroke-width="4"/>
+    <circle cx="264.24" cy="72.72" r="9.09" fill="#f97316" stroke="#111827" stroke-width="4"/>
+    <circle cx="176.16" cy="141.39999999999998" r="9.09" fill="#ffffff" stroke="#111827" stroke-width="4"/>
+    <path d="M102.76 64.64 L264.24 72.72 L176.16 141.39999999999998 Z" fill="none" stroke="#ffffff" stroke-width="4"/>
+    <rect x="139.46" y="72.72" width="110.1" height="40.400000000000006" fill="#ffffff" stroke="#111827" stroke-width="5"/>
+    <g transform="translate(157.81 78.78)"><path d="M0 21.0888H7.9992L12.362400000000001 8.7264L18.18 29.815199999999997L22.5432 16.7256H36.36" fill="none" stroke="#27272a" stroke-width="7"/><circle cx="29.815199999999997" cy="8.7264" r="4.7268" fill="#ffffff" stroke="#111827" stroke-width="4"/></g>
+  </g>
+    <g transform="translate(454 418)">
+    <rect x="0" y="0" width="167" height="36" fill="#e11d48" stroke="#111827" stroke-width="3"/>
+    <rect x="18" y="52" width="136.94" height="36" fill="#f97316" stroke="#111827" stroke-width="3"/>
+    <rect x="36" y="104" width="113.56" height="36" fill="#27272a" stroke="#111827" stroke-width="3"/>
+  </g>
+  </g>
+  <text x="1216" y="676" text-anchor="end" fill="#475569" font-family="Helvetica, Arial, sans-serif" font-size="18" font-weight="700">CAPELL OPERATIONS</text>
 </svg>
