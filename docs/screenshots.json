@@ -1,0 +1,35 @@
+{
+    "package": "exception-reports",
+    "composerName": "capell-app/exception-reports",
+    "generatedFor": "deployment-screenshot-runner",
+    "requiresInstalledPackage": true,
+    "outputDirectory": "packages/exception-reports/docs/screenshots",
+    "entries": [
+        {
+            "id": "exception-reports-extension-card",
+            "title": "Exception Reports extension card.",
+            "package": "exception-reports",
+            "surface": "marketplace",
+            "targetType": "marketplace-asset",
+            "target": "extension-card",
+            "required": true,
+            "path": "docs/assets/marketplace/extension-card.svg",
+            "screenshotPath": "packages/exception-reports/docs/screenshots/extension-card.svg",
+            "notes": "Committed Marketplace card preview for Exception Reports.",
+            "useCase": "An operator reviews the extension card before enabling exception email reporting."
+        },
+        {
+            "id": "exception-reports-email-preview",
+            "title": "Exception Reports email preview.",
+            "package": "exception-reports",
+            "surface": "email",
+            "targetType": "marketplace-asset",
+            "target": "exception-email-preview",
+            "required": true,
+            "path": "docs/assets/marketplace/exception-email-preview.svg",
+            "screenshotPath": "packages/exception-reports/docs/screenshots/exception-email-preview.svg",
+            "notes": "Committed sanitized exception email preview for Marketplace documentation.",
+            "useCase": "An operator verifies the report email includes useful context without unsafe diagnostic markup."
+        }
+    ]
+}

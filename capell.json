@@ -1,0 +1,134 @@
+{
+    "manifest-version": 3,
+    "name": "capell-app/exception-reports",
+    "slug": "exception-reports",
+    "displayName": "Exception Reports",
+    "kind": "package",
+    "capellApiVersion": "^4.0",
+    "version": "4.x-dev",
+    "description": "Exception Reports emails operators when Capell reports an unhandled exception, including sanitized app, request, route, user, and stack-trace context that is safe to read in an email client.",
+    "product": {
+        "group": "Capell Operations",
+        "tier": "free",
+        "bundle": "operations"
+    },
+    "namespace": "Capell\\ExceptionReports",
+    "surfaces": ["console", "shared"],
+    "dependencies": {
+        "requires": ["capell-app/core"],
+        "supports": ["capell-app/diagnostics"],
+        "conflicts": []
+    },
+    "providers": {
+        "metadata": [],
+        "install": [],
+        "runtime": [
+            "Capell\\ExceptionReports\\Providers\\ExceptionReportsServiceProvider"
+        ],
+        "admin": [],
+        "frontend": []
+    },
+    "contributes": [
+        {
+            "type": "health-check",
+            "class": "Capell\\ExceptionReports\\Health\\ExceptionReportsHealthCheck"
+        }
+    ],
+    "database": {
+        "migrations": false,
+        "settings": false,
+        "requiredTables": []
+    },
+    "commands": {
+        "install": null,
+        "setup": null,
+        "demo": null,
+        "doctor": null
+    },
+    "actions": {
+        "reportExceptionByEmail": "Capell\\ExceptionReports\\Actions\\ReportExceptionByEmailAction"
+    },
+    "settings": [],
+    "permissions": [],
+    "capabilities": ["transactional-email"],
+    "security": {
+        "riskTier": "low",
+        "publicSurface": {
+            "routeNames": [],
+            "auth": "none",
+            "csrfExemptRoutes": [],
+            "signedRoutes": [],
+            "tokenizedRoutes": [],
+            "webhookRoutes": [],
+            "throttledRoutes": []
+        },
+        "sensitiveData": {
+            "encryptedFields": [],
+            "hashedTokenFields": [],
+            "redactedOutputClasses": [],
+            "plaintextJustifications": []
+        },
+        "publicOutput": {
+            "cacheSafe": false,
+            "forbidAuthoringSurface": true,
+            "forbidSecrets": true,
+            "forbidPublicBladeQueries": true
+        },
+        "externalHttpClients": {
+            "requiresTimeouts": false,
+            "requiresSecretRedaction": false,
+            "clients": []
+        },
+        "adminSurface": {
+            "authorization": "none",
+            "permissions": []
+        }
+    },
+    "performance": {
+        "frontendRenderBudgetMs": 0,
+        "adminQueryBudget": 0,
+        "cacheTags": [],
+        "cacheSafety": {
+            "cacheable": false,
+            "variesBy": [],
+            "sensitiveOutput": true,
+            "invalidationSources": [],
+            "queueInvalidation": false
+        }
+    },
+    "healthChecks": [
+        {
+            "key": "exception-reports.runtime",
+            "label": "Exception Reports registers sanitized email reporting for reported exceptions.",
+            "class": "Capell\\ExceptionReports\\Health\\ExceptionReportsHealthCheck",
+            "severity": "warning",
+            "surface": "shared"
+        }
+    ],
+    "commercial": {
+        "proposedLicense": "free",
+        "requestedCertification": "first-party",
+        "supportPolicy": "standard",
+        "privateDocsRequested": false
+    },
+    "marketplace": {
+        "summary": "Email alerting for unhandled Capell exceptions, with request, route, user, and stack-trace context sanitized for safe operator triage.",
+        "description": "Exception Reports gives operators a direct email signal when a Capell app reports an unhandled exception. Reports include the app, environment, exception class, message, request route, route parameters, current user, request identifiers, and stack trace, then strip unsafe diagnostic markup before the email renders. Signature and global rate limits keep repeated failures from flooding the queue.",
+        "screenshots": [
+            {
+                "path": "docs/assets/marketplace/extension-card.svg",
+                "alt": "Exception Reports extension preview image",
+                "caption": "Exception Reports extension preview for Marketplace cards."
+            },
+            {
+                "path": "docs/assets/marketplace/exception-email-preview.svg",
+                "alt": "Exception Reports email preview with sanitized diagnostic context",
+                "caption": "Sanitized exception email showing request, route, user, and stack trace context."
+            }
+        ],
+        "categories": ["operations", "monitoring", "email"]
+    },
+    "contributionTraceability": {
+        "deferredContributions": []
+    }
+}

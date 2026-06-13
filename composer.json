@@ -1,0 +1,53 @@
+{
+    "name": "capell-app/exception-reports",
+    "description": "Email unhandled exception reports from Capell with sanitized request, route, user, and stack-trace context.",
+    "type": "library",
+    "license": "proprietary",
+    "autoload": {
+        "psr-4": {
+            "Capell\\ExceptionReports\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Capell\\ExceptionReports\\Tests\\": "tests"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Capell\\ExceptionReports\\Providers\\ExceptionReportsServiceProvider"
+            ]
+        },
+        "branch-alias": {
+            "dev-main": "4.x-dev"
+        }
+    },
+    "require": {
+        "php": "^8.3",
+        "capell-app/core": "^4.0 || 4.x-dev",
+        "laravel/framework": "^11.44.2|^12.0|^13.0",
+        "lorisleiva/laravel-actions": "^2.8",
+        "spatie/laravel-package-tools": "^1.14.1"
+    },
+    "homepage": "https://github.com/capell-app/exception-reports",
+    "keywords": [
+        "capell",
+        "cms",
+        "laravel",
+        "exception-reporting",
+        "operations",
+        "email-alerts"
+    ],
+    "authors": [
+        {
+            "name": "Capell Team",
+            "email": "team@capell.app",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+        "source": "https://github.com/capell-app/capell-packages",
+        "docs": "https://docs.capell.app/packages/exception-reports"
+    }
+}

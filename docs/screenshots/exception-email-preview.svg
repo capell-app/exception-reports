@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Exception report email preview</title>
+  <desc id="desc">A sanitized exception report email preview with request and stack trace context.</desc>
+  <rect width="1200" height="675" fill="#f3f4f6"/>
+  <rect x="260" y="48" width="680" height="579" rx="18" fill="#ffffff" stroke="#d1d5db"/>
+  <text x="310" y="112" fill="#111827" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="700">route: marketplace.checkout</text>
+  <text x="310" y="154" fill="#4b5563" font-family="Inter, Arial, sans-serif" font-size="18">An unhandled exception was reported in Capell.</text>
+  <rect x="310" y="190" width="580" height="128" rx="12" fill="#fee2e2"/>
+  <text x="338" y="230" fill="#991b1b" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700">RuntimeException</text>
+  <text x="338" y="262" fill="#7f1d1d" font-family="Inter, Arial, sans-serif" font-size="16">Payment provider rejected checkout handoff.</text>
+  <text x="338" y="294" fill="#7f1d1d" font-family="Inter, Arial, sans-serif" font-size="16">production • app/Actions/Checkout.php:83</text>
+  <text x="310" y="368" fill="#111827" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700">Request</text>
+  <rect x="310" y="392" width="580" height="74" rx="10" fill="#f9fafb"/>
+  <text x="338" y="424" fill="#374151" font-family="Inter, Arial, sans-serif" font-size="15">GET /marketplace/checkout/capell-seo-suite</text>
+  <text x="338" y="448" fill="#374151" font-family="Inter, Arial, sans-serif" font-size="15">Request ID: req_01JZ_SANITIZED</text>
+  <text x="310" y="514" fill="#111827" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700">Stack Trace</text>
+  <rect x="310" y="538" width="580" height="50" rx="10" fill="#111827"/>
+  <text x="338" y="570" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="14">#0 Capell\\Marketplace\\Actions\\CheckoutAction-&gt;handle()</text>
+</svg>
