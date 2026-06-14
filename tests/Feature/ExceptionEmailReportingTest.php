@@ -5,10 +5,12 @@ declare(strict_types=1);
 use Capell\ExceptionReports\Actions\ReportExceptionByEmailAction;
 use Capell\ExceptionReports\Mail\UnhandledExceptionReported;
 use Illuminate\Contracts\Container\BindingResolutionException;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
+use Symfony\Component\Console\Exception\ExceptionInterface as ConsoleException;
 
 /**
  * @param  array<string, mixed>  $values
@@ -110,6 +112,34 @@ it('includes request user and route context', function (): void {
             && $request['accept'] === 'text/html'
             && $request['request_id'] === 'req_exception_report_test'
             && $mail->report['user'] === null;
+    });
+});
+
+it('includes console command context when reporting artisan option parsing failures', function (): void {
+    Mail::fake();
+
+    $_SERVER['argv'] = ['artisan', 'migrate', '--force', '--columns=120', '--api-token=secret-token'];
+
+    try {
+        Artisan::call('migrate', [
+            '--force' => true,
+            '--columns' => '120',
+        ]);
+    } catch (ConsoleException $exception) {
+        ReportExceptionByEmailAction::run($exception);
+    }
+
+    Mail::assertQueued(UnhandledExceptionReported::class, function (UnhandledExceptionReported $mail): bool {
+        $console = exceptionReportsTestArrayValue($mail->report, 'console');
+
+        return $mail->report['source'] === 'command: migrate'
+            && $mail->report['subject'] === '[Capell] Symfony\Component\Console\Exception\InvalidOptionException in command: migrate'
+            && $console['command'] === 'migrate'
+            && $console['arguments'] === 'migrate --force --columns=120 --api-token=***'
+            && $console['command_line'] === 'migrate --force --columns=120 --api-token=***'
+            && str_contains((string) $mail->render(), 'Console')
+            && str_contains((string) $mail->render(), '--columns=120')
+            && ! str_contains((string) $mail->render(), 'secret-token');
     });
 });
 

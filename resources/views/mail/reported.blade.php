@@ -121,6 +121,43 @@ line-height: 1.45;
 {{ json_encode($safeReport['request']['route_parameters'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
 @endif
 
+@if (($safeReport['console']['command'] ?? 'n/a') !== 'n/a' || ($safeReport['console']['command_line'] ?? 'n/a') !== 'n/a')
+## {{ __('capell-exception-reports::mail.console') }}
+
+<table style="width: 100%; border-collapse: collapse">
+<tbody>
+@foreach ([
+    __('capell-exception-reports::mail.command') => $safeReport['console']['command'] ?? 'n/a',
+    __('capell-exception-reports::mail.arguments') => $safeReport['console']['arguments'] ?? 'n/a',
+    __('capell-exception-reports::mail.command_line') => $safeReport['console']['command_line'] ?? 'n/a',
+] as $label => $value)
+<tr>
+<th
+style="
+width: 30%;
+padding: 8px 10px 8px 0;
+text-align: left;
+vertical-align: top;
+"
+>
+{{ $label }}
+</th>
+<td
+style="
+padding: 8px 0;
+vertical-align: top;
+word-break: break-word;
+overflow-wrap: anywhere;
+"
+>
+{{ $value }}
+</td>
+</tr>
+@endforeach
+</tbody>
+</table>
+@endif
+
 ## {{ __('capell-exception-reports::mail.stack_trace') }}
 
 <pre
