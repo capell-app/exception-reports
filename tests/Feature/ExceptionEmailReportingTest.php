@@ -7,6 +7,7 @@ use Capell\ExceptionReports\Mail\UnhandledExceptionReported;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
@@ -61,23 +62,64 @@ it('queues exception reports by email', function (): void {
 
 it('never masks cache binding failures', function (): void {
     Mail::fake();
+    $log = Log::spy();
 
     RateLimiter::shouldReceive('tooManyAttempts')
         ->once()
-        ->andThrow(new BindingResolutionException('Target class [cache.store] does not exist.'));
+        ->andThrow(new BindingResolutionException('Target class [cache.store] does not exist. token=cache-secret'));
 
     ReportExceptionByEmailAction::run(new RuntimeException('Something broke'));
 
     Mail::assertNothingQueued();
+    $log->shouldHaveReceived('warning')
+        ->once()
+        ->with(
+            'Exception Reports failed to queue an exception email.',
+            Mockery::on(fn (array $context): bool => ($context['reporter_exception'] ?? null) === BindingResolutionException::class
+                && ($context['reporter_message'] ?? null) === 'Target class [cache.store] does not exist. token=[redacted]'
+                && ($context['original_exception'] ?? null) === RuntimeException::class),
+        );
 });
 
 it('uses the registered exception reporter without masking resolution failures', function (): void {
+    $log = Log::spy();
+
     app()->bind(ReportExceptionByEmailAction::class, function (): never {
-        throw new BindingResolutionException('Target class [cache.store] does not exist.');
+        throw new BindingResolutionException('Target class [cache.store] does not exist. password=provider-secret');
     });
 
-    expect(fn () => report(new RuntimeException('Original failure')))
+    expect(function (): void {
+        report(new RuntimeException('Original failure token=original-secret'));
+    })
         ->not->toThrow(BindingResolutionException::class);
+
+    $log->shouldHaveReceived('warning')
+        ->once()
+        ->with(
+            'Exception Reports failed to run the exception reporter.',
+            Mockery::on(fn (array $context): bool => ($context['reporter_exception'] ?? null) === BindingResolutionException::class
+                && ($context['reporter_message'] ?? null) === 'Target class [cache.store] does not exist. password=[redacted]'
+                && ($context['original_message'] ?? null) === 'Original failure token=[redacted]'),
+        );
+});
+
+it('does not recurse when reporter failure logging fails', function (): void {
+    Mail::fake();
+
+    Log::shouldReceive('warning')
+        ->once()
+        ->andThrow(new RuntimeException('Logger failed token=logger-secret'));
+
+    RateLimiter::shouldReceive('tooManyAttempts')
+        ->once()
+        ->andThrow(new BindingResolutionException('Target class [cache.store] does not exist. token=cache-secret'));
+
+    expect(function (): void {
+        ReportExceptionByEmailAction::run(new RuntimeException('Something broke'));
+    })
+        ->not->toThrow(RuntimeException::class);
+
+    Mail::assertNothingQueued();
 });
 
 it('includes request user and route context', function (): void {
@@ -238,6 +280,76 @@ it('strips unsafe diagnostic content and marks the report unsafe', function (): 
     $mail->assertDontSeeInHtml('| Injected | row |', false);
 
     expect($mail->envelope()->subject)->toBe('[Capell] bad');
+});
+
+it('redacts secrets from diagnostic email context', function (): void {
+    $mail = new UnhandledExceptionReported([
+        'subject' => '[Capell] RuntimeException in https://capell.test/reset?token=subject-secret',
+        'source' => 'route: secret.route',
+        'summary' => [
+            'app' => 'Capell',
+            'environment' => 'testing',
+            'exception' => RuntimeException::class,
+            'message' => 'Payment failed password=summary-secret',
+            'file' => '/tmp/Example.php',
+            'line' => 123,
+            'reported_at' => now()->toDayDateTimeString(),
+        ],
+        'request' => [
+            'method' => 'GET',
+            'url' => 'https://capell.test/orders?token=url-secret&signature=url-signature&safe=visible',
+            'path' => 'orders',
+            'route_name' => 'orders.show',
+            'route_action' => 'OrdersController@show',
+            'route_parameters' => [
+                'package' => 'visible-package',
+                'token' => 'route-token-secret',
+                'api_key' => 'route-api-key-secret',
+            ],
+            'ip_address' => '127.0.0.1',
+            'referer' => 'https://capell.test/login?password=referer-secret',
+            'browser' => 'Mozilla/5.0',
+            'accept' => 'text/html',
+            'request_id' => 'req-secret',
+        ],
+        'console' => [
+            'command' => 'sync',
+            'arguments' => '--api-token=console-secret',
+            'command_line' => 'sync --api-token=console-secret',
+        ],
+        'user' => [
+            'id' => 1,
+            'name' => 'Ada Lovelace',
+            'email' => 'ada@example.com',
+            'remember_token' => 'remember-secret',
+        ],
+        'trace' => "Authorization: Bearer trace-secret\n#0 Client->request('https://api.example.test?api_key=trace-api-secret')",
+    ]);
+
+    $html = (string) $mail->render();
+
+    $mail->assertSeeInHtml('Unsafe diagnostic content was stripped');
+    $mail->assertSeeInHtml('request.url');
+    $mail->assertSeeInHtml('request.route_parameters.token');
+    $mail->assertSeeInHtml('request.route_parameters.api_key');
+    $mail->assertSeeInHtml('console.arguments');
+    $mail->assertSeeInHtml('trace');
+    $mail->assertSeeInHtml('safe=visible');
+    $mail->assertSeeInHtml('visible-package');
+    $mail->assertSeeInHtml('[redacted]');
+
+    expect($html)
+        ->not->toContain('subject-secret')
+        ->not->toContain('summary-secret')
+        ->not->toContain('url-secret')
+        ->not->toContain('url-signature')
+        ->not->toContain('route-token-secret')
+        ->not->toContain('route-api-key-secret')
+        ->not->toContain('referer-secret')
+        ->not->toContain('console-secret')
+        ->not->toContain('remember-secret')
+        ->not->toContain('trace-secret')
+        ->not->toContain('trace-api-secret');
 });
 
 it('rate limits duplicate exception reports by signature', function (): void {

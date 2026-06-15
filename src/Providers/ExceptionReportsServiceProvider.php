@@ -9,6 +9,8 @@ use Capell\ExceptionReports\Actions\ReportExceptionByEmailAction;
 use Capell\ExceptionReports\Support\ExceptionReportMailSanitizer;
 use Illuminate\Contracts\Debug\ExceptionHandler as ExceptionHandlerContract;
 use Illuminate\Foundation\Exceptions\Handler;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Spatie\LaravelPackageTools\Package;
 use Throwable;
 
@@ -58,11 +60,30 @@ final class ExceptionReportsServiceProvider extends AbstractPackageServiceProvid
 
             try {
                 resolve(ReportExceptionByEmailAction::class)->handle($exception);
-            } catch (Throwable) {
-                //
+            } catch (Throwable $reporterFailure) {
+                $this->logReporterFailure($reporterFailure, $exception);
             }
         });
 
         return null;
+    }
+
+    private function logReporterFailure(Throwable $reporterFailure, Throwable $originalException): void
+    {
+        try {
+            Log::warning(
+                'Exception Reports failed to run the exception reporter.',
+                resolve(ExceptionReportMailSanitizer::class)->sanitizeLogContext([
+                    'reporter_exception' => $reporterFailure::class,
+                    'reporter_message' => Str::limit($reporterFailure->getMessage(), 500, '...'),
+                    'original_exception' => $originalException::class,
+                    'original_message' => Str::limit($originalException->getMessage(), 500, '...'),
+                    'original_file' => $originalException->getFile(),
+                    'original_line' => $originalException->getLine(),
+                ]),
+            );
+        } catch (Throwable) {
+            //
+        }
     }
 }

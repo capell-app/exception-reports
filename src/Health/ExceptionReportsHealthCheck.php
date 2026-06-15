@@ -11,6 +11,8 @@ use Capell\ExceptionReports\Providers\ExceptionReportsServiceProvider;
 use Capell\ExceptionReports\Support\ExceptionReportMailSanitizer;
 use Illuminate\Contracts\Debug\ExceptionHandler as ExceptionHandlerContract;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Queue;
 use RuntimeException;
 use Throwable;
 
@@ -31,6 +33,9 @@ final class ExceptionReportsHealthCheck implements ChecksExtensionHealth
         return collect([
             $check->providerLoadedCheck(),
             $check->recipientConfiguredCheck(),
+            $check->mailerConfiguredCheck(),
+            $check->fromAddressConfiguredCheck(),
+            $check->queueConnectionConfiguredCheck(),
             $check->mailViewCheck(),
             $check->rateLimiterCheck(),
         ]);
@@ -60,18 +65,71 @@ final class ExceptionReportsHealthCheck implements ChecksExtensionHealth
 
     public function recipientConfiguredCheck(): DoctorCheckResultData
     {
-        $recipient = config('capell-exception-reports.recipient');
-        $configured = is_string($recipient) && $recipient !== '';
+        $configured = $this->recipient() !== null;
+        $usesLegacyFallback = ! $this->stringConfigIsFilled('capell-exception-reports.recipient')
+            && $this->stringConfigIsFilled('services.exception_reports.to');
 
         return new DoctorCheckResultData(
             label: (string) __('capell-exception-reports::package.health.recipient.label'),
             passed: $configured,
-            message: $configured
-                ? (string) __('capell-exception-reports::package.health.recipient.ready')
-                : (string) __('capell-exception-reports::package.health.recipient.not_ready'),
+            message: match (true) {
+                $usesLegacyFallback => (string) __('capell-exception-reports::package.health.recipient.legacy_ready'),
+                $configured => (string) __('capell-exception-reports::package.health.recipient.ready'),
+                default => (string) __('capell-exception-reports::package.health.recipient.not_ready'),
+            },
             remediation: $configured
                 ? null
                 : (string) __('capell-exception-reports::package.health.recipient.remediation'),
+        );
+    }
+
+    public function mailerConfiguredCheck(): DoctorCheckResultData
+    {
+        $ready = app()->bound('mail.manager')
+            && $this->configuredMailerExists();
+
+        return new DoctorCheckResultData(
+            label: (string) __('capell-exception-reports::package.health.mailer.label'),
+            passed: $ready,
+            message: $ready
+                ? (string) __('capell-exception-reports::package.health.mailer.ready')
+                : (string) __('capell-exception-reports::package.health.mailer.not_ready'),
+            remediation: $ready
+                ? null
+                : (string) __('capell-exception-reports::package.health.mailer.remediation'),
+        );
+    }
+
+    public function fromAddressConfiguredCheck(): DoctorCheckResultData
+    {
+        $ready = $this->configuredFromAddressIsValid();
+
+        return new DoctorCheckResultData(
+            label: (string) __('capell-exception-reports::package.health.from_address.label'),
+            passed: $ready,
+            message: $ready
+                ? (string) __('capell-exception-reports::package.health.from_address.ready')
+                : (string) __('capell-exception-reports::package.health.from_address.not_ready'),
+            remediation: $ready
+                ? null
+                : (string) __('capell-exception-reports::package.health.from_address.remediation'),
+        );
+    }
+
+    public function queueConnectionConfiguredCheck(): DoctorCheckResultData
+    {
+        $ready = app()->bound('queue')
+            && $this->configuredQueueConnectionExists();
+
+        return new DoctorCheckResultData(
+            label: (string) __('capell-exception-reports::package.health.queue.label'),
+            passed: $ready,
+            message: $ready
+                ? (string) __('capell-exception-reports::package.health.queue.ready')
+                : (string) __('capell-exception-reports::package.health.queue.not_ready'),
+            remediation: $ready
+                ? null
+                : (string) __('capell-exception-reports::package.health.queue.remediation'),
         );
     }
 
@@ -120,6 +178,65 @@ final class ExceptionReportsHealthCheck implements ChecksExtensionHealth
         } catch (Throwable) {
             return false;
         }
+    }
+
+    private function configuredMailerExists(): bool
+    {
+        $mailer = $this->stringConfig('mail.default');
+
+        if ($mailer === null || config(sprintf('mail.mailers.%s', $mailer)) === null) {
+            return false;
+        }
+
+        try {
+            Mail::mailer($mailer);
+
+            return true;
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    private function configuredFromAddressIsValid(): bool
+    {
+        $address = $this->stringConfig('mail.from.address');
+
+        return $address !== null && filter_var($address, FILTER_VALIDATE_EMAIL) !== false;
+    }
+
+    private function configuredQueueConnectionExists(): bool
+    {
+        $connection = $this->stringConfig('queue.default');
+
+        if ($connection === null || config(sprintf('queue.connections.%s', $connection)) === null) {
+            return false;
+        }
+
+        try {
+            Queue::connection($connection);
+
+            return true;
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    private function recipient(): ?string
+    {
+        return $this->stringConfig('capell-exception-reports.recipient')
+            ?? $this->stringConfig('services.exception_reports.to');
+    }
+
+    private function stringConfigIsFilled(string $key): bool
+    {
+        return $this->stringConfig($key) !== null;
+    }
+
+    private function stringConfig(string $key): ?string
+    {
+        $value = config($key);
+
+        return is_string($value) && $value !== '' ? $value : null;
     }
 
     private function mailViewCanRender(): bool
