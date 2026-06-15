@@ -6,12 +6,12 @@ namespace Capell\ExceptionReports\Support;
 
 final class ExceptionReportMailSanitizer
 {
-    private const REDACTED = '[redacted]';
+    private const string REDACTED = '[redacted]';
 
     /**
      * @var array<int, string>
      */
-    private const SENSITIVE_KEYWORDS = [
+    private const array SENSITIVE_KEYWORDS = [
         'authorization',
         'cookie',
         'password',
