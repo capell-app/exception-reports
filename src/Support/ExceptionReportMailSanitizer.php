@@ -6,6 +6,28 @@ namespace Capell\ExceptionReports\Support;
 
 final class ExceptionReportMailSanitizer
 {
+    private const REDACTED = '[redacted]';
+
+    /**
+     * @var array<int, string>
+     */
+    private const SENSITIVE_KEYWORDS = [
+        'authorization',
+        'cookie',
+        'password',
+        'passwd',
+        'secret',
+        'session',
+        'signature',
+        'token',
+        'apikey',
+        'api_key',
+        'accesskey',
+        'access_key',
+        'privatekey',
+        'private_key',
+    ];
+
     /**
      * @param  array<string, mixed>  $report
      * @return array<string, mixed>
@@ -30,6 +52,17 @@ final class ExceptionReportMailSanitizer
         ];
 
         return $sanitized;
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     * @return array<string, mixed>
+     */
+    public function sanitizeLogContext(array $context): array
+    {
+        $unsafePaths = [];
+
+        return $this->sanitizeArray($context, 'context', $unsafePaths);
     }
 
     /**
@@ -62,6 +95,7 @@ final class ExceptionReportMailSanitizer
         $sanitized = preg_replace('/[^\P{C}\t]+/u', '', $sanitized) ?? '';
         $sanitized = preg_replace('/\s+/u', ' ', $sanitized) ?? '';
         $sanitized = trim(str_replace('|', '/', $sanitized));
+        $sanitized = $this->redactSensitiveValue($sanitized, $path);
 
         if ($sanitized !== $original) {
             $unsafePaths[] = $path;
@@ -79,6 +113,7 @@ final class ExceptionReportMailSanitizer
         $sanitized = $this->stripUnsafeHtml($original);
         $sanitized = str_replace(["\r\n", "\r"], "\n", $sanitized);
         $sanitized = preg_replace('/[^\P{C}\n\t]+/u', '', $sanitized) ?? '';
+        $sanitized = $this->redactSensitiveValue($sanitized, $path);
 
         if ($sanitized !== $original) {
             $unsafePaths[] = $path;
@@ -123,5 +158,43 @@ final class ExceptionReportMailSanitizer
     private function arrayValue(mixed $value): array
     {
         return is_array($value) ? $value : [];
+    }
+
+    private function redactSensitiveValue(string $value, string $path): string
+    {
+        if ($this->isSensitivePath($path)) {
+            return $value === '' || $value === 'n/a' ? $value : self::REDACTED;
+        }
+
+        $value = preg_replace(
+            '/\b(Bearer|Basic)\s+[A-Za-z0-9._~+\/=-]+/i',
+            '$1 ' . self::REDACTED,
+            $value,
+        ) ?? '';
+
+        $value = preg_replace(
+            '/(?<=[?&;\s])((?:api[_-]?key|access[_-]?key|private[_-]?key|password|passwd|secret|session|signature|token)=)[^&;\s]+/i',
+            '$1' . self::REDACTED,
+            $value,
+        ) ?? '';
+
+        return preg_replace(
+            '/\b((?:api[_-]?key|access[_-]?key|private[_-]?key|password|passwd|secret|session|signature|token)\s*[:=]\s*)[^\s,;&]+/i',
+            '$1' . self::REDACTED,
+            $value,
+        ) ?? '';
+    }
+
+    private function isSensitivePath(string $path): bool
+    {
+        $normalizedPath = strtolower(str_replace(['-', '_', '.'], '', $path));
+
+        foreach (self::SENSITIVE_KEYWORDS as $keyword) {
+            if (str_contains($normalizedPath, str_replace('_', '', $keyword))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

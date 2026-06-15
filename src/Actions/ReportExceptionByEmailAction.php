@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Capell\ExceptionReports\Actions;
 
 use Capell\ExceptionReports\Mail\UnhandledExceptionReported;
+use Capell\ExceptionReports\Support\ExceptionReportMailSanitizer;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -35,8 +37,8 @@ final class ReportExceptionByEmailAction
             $report = $this->buildReport($exception, $this->currentRequest());
 
             Mail::to($recipient)->queue(new UnhandledExceptionReported($report));
-        } catch (Throwable) {
-            //
+        } catch (Throwable $reporterFailure) {
+            $this->logReporterFailure($reporterFailure, $exception);
         }
     }
 
@@ -342,5 +344,24 @@ final class ReportExceptionByEmailAction
         }
 
         return $argument;
+    }
+
+    private function logReporterFailure(Throwable $reporterFailure, Throwable $originalException): void
+    {
+        try {
+            Log::warning(
+                'Exception Reports failed to queue an exception email.',
+                resolve(ExceptionReportMailSanitizer::class)->sanitizeLogContext([
+                    'reporter_exception' => $reporterFailure::class,
+                    'reporter_message' => Str::limit($reporterFailure->getMessage(), 500, '...'),
+                    'original_exception' => $originalException::class,
+                    'original_message' => Str::limit($originalException->getMessage(), 500, '...'),
+                    'original_file' => $originalException->getFile(),
+                    'original_line' => $originalException->getLine(),
+                ]),
+            );
+        } catch (Throwable) {
+            //
+        }
     }
 }
