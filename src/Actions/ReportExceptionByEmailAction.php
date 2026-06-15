@@ -78,6 +78,7 @@ final class ReportExceptionByEmailAction
                 'accept' => $request?->headers->get('accept'),
                 'request_id' => $request?->headers->get('x-request-id') ?? $request?->headers->get('x-correlation-id'),
             ],
+            'console' => $this->consoleContext(),
             'user' => $this->userContext($user),
             'trace' => $exception->getTraceAsString(),
         ];
@@ -106,6 +107,12 @@ final class ReportExceptionByEmailAction
 
         if ($request instanceof Request && $request->path() !== '/') {
             return 'path: ' . $request->path();
+        }
+
+        $commandName = $this->consoleCommandName();
+
+        if ($commandName !== null) {
+            return 'command: ' . $commandName;
         }
 
         return 'file: ' . basename($exception->getFile()) . ':' . $exception->getLine();
@@ -225,5 +232,115 @@ final class ReportExceptionByEmailAction
         }
 
         return max(1, $default);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function consoleContext(): ?array
+    {
+        if (! app()->runningInConsole()) {
+            return null;
+        }
+
+        $argv = $this->argv();
+
+        return [
+            'command' => $this->consoleCommandName($argv),
+            'arguments' => implode(' ', array_map($this->quoteConsoleArgument(...), $this->consoleArguments($argv))),
+            'command_line' => $this->consoleCommandLine($argv),
+        ];
+    }
+
+    /**
+     * @param  array<int, string>|null  $argv
+     */
+    private function consoleCommandName(?array $argv = null): ?string
+    {
+        $argv ??= $this->argv();
+
+        foreach (array_slice($argv, 1) as $argument) {
+            if ($argument === '' || str_starts_with($argument, '-')) {
+                continue;
+            }
+
+            return $argument;
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function argv(): array
+    {
+        $argv = $_SERVER['argv'] ?? [];
+
+        if (! is_array($argv)) {
+            return [];
+        }
+
+        return array_values(array_filter($argv, is_string(...)));
+    }
+
+    /**
+     * @param  array<int, string>  $argv
+     * @return array<int, string>
+     */
+    private function consoleArguments(array $argv): array
+    {
+        return array_map($this->maskConsoleArgument(...), array_slice($argv, 1));
+    }
+
+    /**
+     * @param  array<int, string>  $argv
+     */
+    private function consoleCommandLine(array $argv): string
+    {
+        return Str::limit(implode(' ', array_map($this->quoteConsoleArgument(...), $this->consoleArguments($argv))), 1000, '...');
+    }
+
+    private function maskConsoleArgument(string $argument): string
+    {
+        if (! str_contains($argument, '=')) {
+            return $this->isSensitiveArgumentName($argument) ? $argument . '=***' : $argument;
+        }
+
+        [$name] = explode('=', $argument, 2);
+
+        if (! $this->isSensitiveArgumentName($name)) {
+            return $argument;
+        }
+
+        return $name . '=***';
+    }
+
+    private function isSensitiveArgumentName(string $argument): bool
+    {
+        $normalized = Str::of($argument)
+            ->lower()
+            ->trim('-')
+            ->replace(['_', '-'], '')
+            ->toString();
+
+        return Str::contains($normalized, [
+            'password',
+            'passwd',
+            'secret',
+            'token',
+            'apikey',
+            'accesskey',
+            'privatekey',
+        ]);
+    }
+
+    private function quoteConsoleArgument(string $argument): string
+    {
+        if ($argument === '' || preg_match('/\s/', $argument) === 1) {
+            return escapeshellarg($argument);
+        }
+
+        return $argument;
     }
 }
