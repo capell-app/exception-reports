@@ -62,7 +62,7 @@ it('queues exception reports by email', function (): void {
 
 it('never masks cache binding failures', function (): void {
     Mail::fake();
-    Log::spy();
+    $log = Log::spy();
 
     RateLimiter::shouldReceive('tooManyAttempts')
         ->once()
@@ -71,7 +71,7 @@ it('never masks cache binding failures', function (): void {
     ReportExceptionByEmailAction::run(new RuntimeException('Something broke'));
 
     Mail::assertNothingQueued();
-    Log::getFacadeRoot()->shouldHaveReceived('warning')
+    $log->shouldHaveReceived('warning')
         ->once()
         ->with(
             'Exception Reports failed to queue an exception email.',
@@ -82,7 +82,7 @@ it('never masks cache binding failures', function (): void {
 });
 
 it('uses the registered exception reporter without masking resolution failures', function (): void {
-    Log::spy();
+    $log = Log::spy();
 
     app()->bind(ReportExceptionByEmailAction::class, function (): never {
         throw new BindingResolutionException('Target class [cache.store] does not exist. password=provider-secret');
@@ -93,7 +93,7 @@ it('uses the registered exception reporter without masking resolution failures',
     })
         ->not->toThrow(BindingResolutionException::class);
 
-    Log::getFacadeRoot()->shouldHaveReceived('warning')
+    $log->shouldHaveReceived('warning')
         ->once()
         ->with(
             'Exception Reports failed to run the exception reporter.',
