@@ -71,7 +71,7 @@ it('never masks cache binding failures', function (): void {
     ReportExceptionByEmailAction::run(new RuntimeException('Something broke'));
 
     Mail::assertNothingQueued();
-    Log::shouldHaveReceived('warning')
+    Log::getFacadeRoot()->shouldHaveReceived('warning')
         ->once()
         ->with(
             'Exception Reports failed to queue an exception email.',
@@ -93,7 +93,7 @@ it('uses the registered exception reporter without masking resolution failures',
     })
         ->not->toThrow(BindingResolutionException::class);
 
-    Log::shouldHaveReceived('warning')
+    Log::getFacadeRoot()->shouldHaveReceived('warning')
         ->once()
         ->with(
             'Exception Reports failed to run the exception reporter.',
