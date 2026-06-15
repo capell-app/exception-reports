@@ -49,17 +49,17 @@ Exception Reports should be positioned as lightweight, privacy-aware exception e
 
 ## 6. Prioritized Roadmap
 
-| Item                                                       | Bucket | Effort | Impact | Section ref |
-| ---------------------------------------------------------- | ------ | ------ | ------ | ----------- |
-| Redact common secrets/tokens/authorization data            | Now    | M      | High   | §2.1, §4.1  |
-| Log or emit safe reporter failures without recursion       | Now    | M      | High   | §2.2, §4.2  |
-| Add mailer/queue/from-address/fallback health diagnostics  | Now    | S      | Medium | §2.3, §4.3  |
-| Document rate limits, queue behavior, and sanitizer scope  | Now    | S      | Medium | §2.4, §4.4  |
+| Item                                                      | Bucket | Effort | Impact | Section ref |
+| --------------------------------------------------------- | ------ | ------ | ------ | ----------- |
+| Redact common secrets/tokens/authorization data           | Now    | M      | High   | §2.1, §4.1  |
+| Log or emit safe reporter failures without recursion      | Now    | M      | High   | §2.2, §4.2  |
+| Add mailer/queue/from-address/fallback health diagnostics | Now    | S      | Medium | §2.3, §4.3  |
+| Document rate limits, queue behavior, and sanitizer scope | Now    | S      | Medium | §2.4, §4.4  |
 | Add digest/grouping mode                                  | Next   | M      | Medium | §3          |
-| Add optional Slack/webhook destination                     | Next   | M      | Medium | §3, §5      |
-| Add rendered email screenshot from real template           | Next   | S      | Low    | §5          |
-| Add admin inbox/history surface                            | Later  | L      | Medium | §3          |
-| Add escalation policies by environment/severity            | Later  | M      | Medium | §5          |
+| Add optional Slack/webhook destination                    | Next   | M      | Medium | §3, §5      |
+| Add rendered email screenshot from real template          | Next   | S      | Low    | §5          |
+| Add admin inbox/history surface                           | Later  | L      | Medium | §3          |
+| Add escalation policies by environment/severity           | Later  | M      | Medium | §5          |
 
 ## 7. Verification
 
