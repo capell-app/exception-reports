@@ -58,9 +58,18 @@ Docs gap: document extension points here if the package delegates persistence to
 - Cache tags: none declared.
 - Commands: none declared.
 
+## Operational Safeguards
+
+- Exception alerts are rate-limited to protect operators during repeated failures.
+- Mail delivery uses the host mail/queue configuration; health diagnostics check the recipient, from address, mailer, and queue readiness.
+- Sanitization covers common secret-bearing values such as passwords, API keys, bearer tokens, cookies, sessions, signatures, signed URLs, and authorization headers.
+- The mailable intentionally omits attachments and raw request bodies so report payloads stay small and privacy-aware.
+- Reporter failures are logged once with redacted context and are not fed back into the exception reporter.
+
 ## Common Pitfalls
 
 - Run package commands from the host app; in this repository use `vendor/bin/pest` for package tests.
+- Use a disposable recipient when testing exception delivery, and avoid using live secrets in reproduction payloads.
 - Keep `composer.json`, `composer.local.json`, `capell.json`, docs, screenshots, and tests aligned when the package surface changes.
 
 ## Troubleshooting
@@ -68,6 +77,8 @@ Docs gap: document extension points here if the package delegates persistence to
 | Symptom | Likely cause | Check | Fix |
 | --- | --- | --- | --- |
 | Package surface is missing after install | Provider or manifest is not loaded | Confirm `capell.json`, package `composer.json`, and provider registration | Reinstall the package, refresh Composer autoload, and clear host caches |
+| No exception email arrives | Missing recipient, sender, queue worker, or mail transport | Check health diagnostics and host mail logs | Configure an explicit recipient/from address and start the queue worker if the host queues mail |
+| Operators need more context than the email shows | Sanitizer or omission policy removed sensitive payloads | Review the source exception and non-secret route/request metadata | Add safe application context before throwing; do not weaken the sanitizer for raw secrets |
 
 ## Quick Start
 

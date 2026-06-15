@@ -51,10 +51,10 @@ Exception Reports should be positioned as lightweight, privacy-aware exception e
 
 | Item                                                      | Bucket | Effort | Impact | Section ref |
 | --------------------------------------------------------- | ------ | ------ | ------ | ----------- |
-| Redact common secrets/tokens/authorization data           | Now    | M      | High   | §2.1, §4.1  |
-| Log or emit safe reporter failures without recursion      | Now    | M      | High   | §2.2, §4.2  |
-| Add mailer/queue/from-address/fallback health diagnostics | Now    | S      | Medium | §2.3, §4.3  |
-| Document rate limits, queue behavior, and sanitizer scope | Now    | S      | Medium | §2.4, §4.4  |
+| Redact common secrets/tokens/authorization data           | Done   | M      | High   | §2.1, §4.1  |
+| Log or emit safe reporter failures without recursion      | Done   | M      | High   | §2.2, §4.2  |
+| Add mailer/queue/from-address/fallback health diagnostics | Done   | S      | Medium | §2.3, §4.3  |
+| Document rate limits, queue behavior, and sanitizer scope | Done   | S      | Medium | §2.4, §4.4  |
 | Add digest/grouping mode                                  | Next   | M      | Medium | §3          |
 | Add optional Slack/webhook destination                    | Next   | M      | Medium | §3, §5      |
 | Add rendered email screenshot from real template          | Next   | S      | Low    | §5          |
@@ -63,7 +63,7 @@ Exception Reports should be positioned as lightweight, privacy-aware exception e
 
 ## 7. Verification
 
-Plan-writing review only; no commands were run for this package in this pass. First implementation slice should start with:
+Implementation slices shipped the current Now rows. Re-run the package verification with:
 
 ```bash
 vendor/bin/pest packages/exception-reports/tests --configuration=phpunit.xml
@@ -80,7 +80,7 @@ vendor/bin/pest packages/exception-reports/tests/Feature/ExceptionEmailReporting
 - [x] Package plan created from current code, manifest, docs, screenshots, and tests.
 - [x] Comprehensive local review pass completed for provider, Action, mailable, sanitizer, health, docs, screenshots, and tests.
 - [x] Capell audience pass completed for operators, developers, and buyers.
-- [ ] Approved implementation slices shipped.
-- [ ] Focused Exception Reports verification passed.
-- [ ] Package tests passed.
-- [ ] Repo preflight passed for changed files.
+- [x] Approved implementation slices shipped.
+- [x] Focused Exception Reports verification passed.
+- [x] Package tests passed.
+- [x] Repo preflight passed for changed files.
