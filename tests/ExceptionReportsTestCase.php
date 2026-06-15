@@ -40,6 +40,8 @@ class ExceptionReportsTestCase extends AbstractTestCase
         config()->set('app.name', 'Capell');
         config()->set('capell-exception-reports.recipient', 'alerts@example.com');
         config()->set('cache.default', 'array');
+        config()->set('mail.default', 'array');
+        config()->set('mail.from.address', 'no-reply@example.com');
         config()->set('queue.default', 'sync');
     }
 }

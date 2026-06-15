@@ -13,8 +13,27 @@ return [
         'recipient' => [
             'label' => 'Exception report recipient',
             'ready' => 'Exception report emails have a configured recipient.',
+            'legacy_ready' => 'Exception report emails are using the legacy services.exception_reports.to recipient fallback.',
             'not_ready' => 'Exception report emails do not have a configured recipient.',
             'remediation' => 'Set EXCEPTION_REPORT_RECIPIENT or capell-exception-reports.recipient.',
+        ],
+        'mailer' => [
+            'label' => 'Exception report mailer',
+            'ready' => 'The configured Laravel mailer is available for exception report emails.',
+            'not_ready' => 'The configured Laravel mailer is missing or cannot be resolved.',
+            'remediation' => 'Set MAIL_MAILER to a configured mail.mailers entry that can be resolved by Laravel.',
+        ],
+        'from_address' => [
+            'label' => 'Exception report from address',
+            'ready' => 'Exception report emails have a valid from address.',
+            'not_ready' => 'Exception report emails do not have a valid from address.',
+            'remediation' => 'Set MAIL_FROM_ADDRESS to a valid email address.',
+        ],
+        'queue' => [
+            'label' => 'Exception report queue connection',
+            'ready' => 'The configured Laravel queue connection is available for queued exception report emails.',
+            'not_ready' => 'The configured Laravel queue connection is missing or cannot be resolved.',
+            'remediation' => 'Set QUEUE_CONNECTION to a configured queue.connections entry that can be resolved by Laravel.',
         ],
         'mail' => [
             'label' => 'Exception report mail renderer',
