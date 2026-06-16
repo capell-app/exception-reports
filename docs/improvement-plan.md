@@ -43,7 +43,7 @@ Exception Reports should be positioned as lightweight, privacy-aware exception a
 
 **Improved summary:** "Privacy-aware exception reporting for Capell, with rate limits, queued email, optional sanitized webhooks, request/user/trace context, and install health diagnostics."
 
-**Media status:** SVG email preview and extension card are acceptable for this small console/shared package. Replace with a real rendered email screenshot if the mail template changes.
+**Media status:** The extension card remains an SVG marketplace asset. The email preview is now a committed PNG captured from the rendered Markdown mailable, with fixture coverage proving secret redaction and unsafe diagnostic stripping remain visible in the preview.
 
 **Cross-sell:** Diagnostics, Email Studio, Nightwatch configuration, Deployments, Site Monitor.
 
@@ -57,7 +57,7 @@ Exception Reports should be positioned as lightweight, privacy-aware exception a
 | Document rate limits, queue behavior, and sanitizer scope | Done   | S      | Medium | §2.4, §4.4  |
 | Add digest/grouping mode                                  | Done   | M      | Medium | §3          |
 | Add optional Slack/webhook destination                    | Done   | M      | Medium | §3, §5      |
-| Add rendered email screenshot from real template          | Next   | S      | Low    | §5          |
+| Add rendered email screenshot from real template          | Done   | S      | Low    | §5          |
 | Add admin inbox/history surface                           | Later  | L      | Medium | §3          |
 | Add escalation policies by environment/severity           | Later  | M      | Medium | §5          |
 

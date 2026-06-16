@@ -125,7 +125,7 @@
                 "caption": "Exception Reports extension preview for Marketplace cards."
             },
             {
-                "path": "docs/assets/marketplace/exception-email-preview.svg",
+                "path": "docs/screenshots/exception-email-preview.png",
                 "alt": "Exception Reports email preview with sanitized diagnostic context",
                 "caption": "Sanitized exception email showing request, route, user, and stack trace context."
             }

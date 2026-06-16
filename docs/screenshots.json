@@ -20,15 +20,15 @@
         },
         {
             "id": "exception-reports-email-preview",
-            "title": "Exception Reports email preview.",
+            "title": "Exception Reports rendered email preview.",
             "package": "exception-reports",
             "surface": "email",
-            "targetType": "marketplace-asset",
+            "targetType": "rendered-email",
             "target": "exception-email-preview",
             "required": true,
-            "path": "docs/assets/marketplace/exception-email-preview.svg",
-            "screenshotPath": "packages/exception-reports/docs/screenshots/exception-email-preview.svg",
-            "notes": "Committed sanitized exception email preview for Marketplace documentation.",
+            "path": "docs/screenshots/exception-email-preview.png",
+            "screenshotPath": "packages/exception-reports/docs/screenshots/exception-email-preview.png",
+            "notes": "Committed PNG captured from the rendered sanitized exception report mailable.",
             "useCase": "An operator verifies the report email includes useful context without unsafe diagnostic markup."
         }
     ]
