@@ -13,4 +13,10 @@ return [
         'global_attempts' => (int) env('CAPELL_EXCEPTION_REPORTS_GLOBAL_ATTEMPTS', 10),
         'global_decay_seconds' => (int) env('CAPELL_EXCEPTION_REPORTS_GLOBAL_DECAY_SECONDS', 60 * 60),
     ],
+
+    'digest' => [
+        'enabled' => filter_var(env('CAPELL_EXCEPTION_REPORTS_DIGEST_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
+        'threshold' => (int) env('CAPELL_EXCEPTION_REPORTS_DIGEST_THRESHOLD', 5),
+        'window_seconds' => (int) env('CAPELL_EXCEPTION_REPORTS_DIGEST_WINDOW_SECONDS', 60 * 60),
+    ],
 ];

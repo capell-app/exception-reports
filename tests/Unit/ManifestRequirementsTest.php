@@ -153,7 +153,10 @@ it('declares extension metadata and runtime provider', function (): void {
             ],
         ])
         ->and($manifest['surfaces'])->toContain('shared')
-        ->and($capabilities)->toBe([PackageCapability::TransactionalEmail->value])
+        ->and($capabilities)->toBe([
+            PackageCapability::TransactionalEmail->value,
+            'exception-report-digests',
+        ])
         ->and(exceptionReportsManifestList($providers, 'runtime'))->toContain(ExceptionReportsServiceProvider::class)
         ->and($actions)->toHaveKey('reportExceptionByEmail', ReportExceptionByEmailAction::class)
         ->and($contributes)->toContain([

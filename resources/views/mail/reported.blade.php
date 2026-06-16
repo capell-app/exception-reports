@@ -13,6 +13,23 @@
 </x-mail::panel>
 @endif
 
+@if (($safeReport['digest']['count'] ?? 'n/a') !== 'n/a')
+<x-mail::panel>
+<strong>{{ __('capell-exception-reports::mail.digest') }}</strong>
+<br />
+{{ __('capell-exception-reports::mail.digest_summary', [
+    'count' => $safeReport['digest']['count'],
+    'window' => $safeReport['digest']['window_seconds'] ?? 'n/a',
+]) }}
+<br />
+<strong>{{ __('capell-exception-reports::mail.digest_threshold') }}:</strong>
+{{ $safeReport['digest']['threshold'] ?? 'n/a' }}
+<br />
+<strong>{{ __('capell-exception-reports::mail.digest_grouped_at') }}:</strong>
+{{ $safeReport['digest']['grouped_at'] ?? 'n/a' }}
+</x-mail::panel>
+@endif
+
 <x-mail::panel>
 <strong>{{ __('capell-exception-reports::mail.environment') }}:</strong>
 {{ $safeReport['summary']['environment'] }}

@@ -60,6 +60,33 @@ it('queues exception reports by email', function (): void {
     });
 });
 
+it('queues grouped digest emails for repeated rate limited exception signatures', function (): void {
+    Mail::fake();
+    config()->set('capell-exception-reports.digest.enabled', true);
+    config()->set('capell-exception-reports.digest.threshold', 2);
+    config()->set('capell-exception-reports.digest.window_seconds', 900);
+
+    $exception = new RuntimeException('Digest this repeated failure');
+
+    ReportExceptionByEmailAction::run($exception);
+    ReportExceptionByEmailAction::run($exception);
+    ReportExceptionByEmailAction::run($exception);
+
+    Mail::assertQueued(UnhandledExceptionReported::class, 2);
+    Mail::assertQueued(UnhandledExceptionReported::class, function (UnhandledExceptionReported $mail): bool {
+        $digest = exceptionReportsTestArrayValue($mail->report, 'digest');
+
+        return $mail->hasTo('alerts@example.com')
+            && str_contains($mail->envelope()->subject, 'Digest: 2 repeated')
+            && $digest['count'] === 2
+            && $digest['threshold'] === 2
+            && $digest['window_seconds'] === 900
+            && is_string($digest['signature'])
+            && str_contains((string) $mail->render(), 'Digest')
+            && str_contains((string) $mail->render(), '2 suppressed reports');
+    });
+});
+
 it('never masks cache binding failures', function (): void {
     Mail::fake();
     $log = Log::spy();

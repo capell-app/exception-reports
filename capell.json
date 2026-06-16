@@ -50,7 +50,7 @@
     },
     "settings": [],
     "permissions": [],
-    "capabilities": ["transactional-email"],
+    "capabilities": ["transactional-email", "exception-report-digests"],
     "security": {
         "riskTier": "low",
         "publicSurface": {
@@ -113,7 +113,7 @@
     },
     "marketplace": {
         "summary": "Email alerting for unhandled Capell exceptions, with request, route, user, and stack-trace context sanitized for safe operator triage.",
-        "description": "Exception Reports gives operators a direct email signal when a Capell app reports an unhandled exception. Reports include the app, environment, exception class, message, request route, route parameters, current user, request identifiers, and stack trace, then strip unsafe diagnostic markup before the email renders. Signature and global rate limits keep repeated failures from flooding the queue.",
+        "description": "Exception Reports gives operators a direct email signal when a Capell app reports an unhandled exception. Reports include the app, environment, exception class, message, request route, route parameters, current user, request identifiers, and stack trace, then strip unsafe diagnostic markup before the email renders. Signature and global rate limits keep repeated failures from flooding the queue, with optional grouped digest emails for repeated suppressed signatures.",
         "screenshots": [
             {
                 "path": "docs/assets/marketplace/extension-card.svg",

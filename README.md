@@ -61,6 +61,7 @@ Docs gap: document extension points here if the package delegates persistence to
 ## Operational Safeguards
 
 - Reports are rate-limited so repeated exception storms do not create unbounded email volume.
+- Optional digest mode groups repeated rate-limited exception signatures and queues a digest email every configured threshold.
 - Delivery is queued through Laravel mail when the host queue is configured; synchronous hosts still use the same sanitized mailable boundary.
 - Recipient configuration should be explicit. The health check reports missing recipients and the fallback path so operators know where alerts are going.
 - Sanitization redacts common secret-bearing keys and values, including passwords, tokens, API keys, cookies, authorization headers, signatures, sessions, and signed URL query parameters.
@@ -79,6 +80,7 @@ Docs gap: document extension points here if the package delegates persistence to
 | --- | --- | --- | --- |
 | Package surface is missing after install | Provider or manifest is not loaded | Confirm `capell.json`, package `composer.json`, and provider registration | Reinstall the package, refresh Composer autoload, and clear host caches |
 | Health reports mail configuration warnings | Missing recipient, sender, queue, or mailer config | Run the package health check and inspect `capell-exception-reports` config | Set an explicit recipient/from address and confirm queue/mail transport readiness |
+| Operators only receive the first email during a repeated exception storm | Signature rate limiting is suppressing duplicates | Check `capell-exception-reports.digest.enabled`, `threshold`, and `window_seconds` | Enable digest mode when grouped repeated-failure emails are useful |
 | Report email contains redacted placeholders | Sanitizer detected secret-bearing keys or values | Inspect the originating request context without copying secrets | Keep the redaction; add structured, non-secret context at the source if operators need more detail |
 
 ## Quick Start

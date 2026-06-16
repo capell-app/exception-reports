@@ -61,6 +61,7 @@ Docs gap: document extension points here if the package delegates persistence to
 ## Operational Safeguards
 
 - Exception alerts are rate-limited to protect operators during repeated failures.
+- Optional digest mode groups repeated rate-limited exception signatures and sends a digest email every configured threshold.
 - Mail delivery uses the host mail/queue configuration; health diagnostics check the recipient, from address, mailer, and queue readiness.
 - Sanitization covers common secret-bearing values such as passwords, API keys, bearer tokens, cookies, sessions, signatures, signed URLs, and authorization headers.
 - The mailable intentionally omits attachments and raw request bodies so report payloads stay small and privacy-aware.
@@ -78,6 +79,7 @@ Docs gap: document extension points here if the package delegates persistence to
 | --- | --- | --- | --- |
 | Package surface is missing after install | Provider or manifest is not loaded | Confirm `capell.json`, package `composer.json`, and provider registration | Reinstall the package, refresh Composer autoload, and clear host caches |
 | No exception email arrives | Missing recipient, sender, queue worker, or mail transport | Check health diagnostics and host mail logs | Configure an explicit recipient/from address and start the queue worker if the host queues mail |
+| Repeated failures only send one normal alert | Signature rate limiting is suppressing duplicates | Check `capell-exception-reports.digest.enabled`, `threshold`, and `window_seconds` | Enable digest mode if operators need grouped repeated-failure emails |
 | Operators need more context than the email shows | Sanitizer or omission policy removed sensitive payloads | Review the source exception and non-secret route/request metadata | Add safe application context before throwing; do not weaken the sanitizer for raw secrets |
 
 ## Quick Start

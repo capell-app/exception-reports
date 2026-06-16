@@ -43,6 +43,7 @@ final class ExceptionReportMailSanitizer
             'request' => $this->sanitizeArray($this->arrayValue(data_get($report, 'request', [])), 'request', $unsafePaths),
             'console' => $this->sanitizeArray($this->arrayValue(data_get($report, 'console', [])), 'console', $unsafePaths),
             'user' => $this->sanitizeArray($this->arrayValue(data_get($report, 'user', [])), 'user', $unsafePaths),
+            'digest' => $this->sanitizeArray($this->arrayValue(data_get($report, 'digest', [])), 'digest', $unsafePaths),
             'trace' => $this->sanitizeBlock(data_get($report, 'trace'), 'trace', $unsafePaths),
         ];
 

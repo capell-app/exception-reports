@@ -20,7 +20,7 @@ Exception Reports emails operators when Capell reports an unhandled exception. I
 
 Capabilities declared: `transactional-email`.
 
-- **No digest/grouping mode.** Repeated exceptions are rate-limited but not grouped into a digest.
+- **Shipped 2026-06-16: digest/grouping mode.** Repeated rate-limited exception signatures can be grouped into thresholded digest emails with count, threshold, window, signature, and grouped timestamp metadata.
 - **No alternate destinations.** Email is the only reporting destination; teams may want Slack/webhooks later.
 - **No admin inbox.** This package is intentionally console/shared only, but an admin inbox could support triage/history.
 - **No attachment support.** The mailable returns no attachments, which is probably correct for privacy but should be explicit.
@@ -55,7 +55,7 @@ Exception Reports should be positioned as lightweight, privacy-aware exception e
 | Log or emit safe reporter failures without recursion      | Done   | M      | High   | §2.2, §4.2  |
 | Add mailer/queue/from-address/fallback health diagnostics | Done   | S      | Medium | §2.3, §4.3  |
 | Document rate limits, queue behavior, and sanitizer scope | Done   | S      | Medium | §2.4, §4.4  |
-| Add digest/grouping mode                                  | Next   | M      | Medium | §3          |
+| Add digest/grouping mode                                  | Done   | M      | Medium | §3          |
 | Add optional Slack/webhook destination                    | Next   | M      | Medium | §3, §5      |
 | Add rendered email screenshot from real template          | Next   | S      | Low    | §5          |
 | Add admin inbox/history surface                           | Later  | L      | Medium | §3          |

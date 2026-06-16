@@ -9,6 +9,7 @@ use Capell\ExceptionReports\Support\ExceptionReportMailSanitizer;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
@@ -31,6 +32,8 @@ final class ReportExceptionByEmailAction
 
         try {
             if (! $this->canReport($exception)) {
+                $this->queueDigestIfNeeded($exception, $recipient);
+
                 return;
             }
 
@@ -175,6 +178,45 @@ final class ReportExceptionByEmailAction
         RateLimiter::hit($globalKey, $this->positiveIntegerConfig('capell-exception-reports.rate_limits.global_decay_seconds', 60 * 60));
 
         return true;
+    }
+
+    private function queueDigestIfNeeded(Throwable $exception, string $recipient): void
+    {
+        if (! (bool) config('capell-exception-reports.digest.enabled', false)) {
+            return;
+        }
+
+        $signature = $this->signature($exception);
+        $windowSeconds = $this->positiveIntegerConfig('capell-exception-reports.digest.window_seconds', 60 * 60);
+        $threshold = $this->positiveIntegerConfig('capell-exception-reports.digest.threshold', 5);
+        $cacheKey = 'exception-report-email:digest:' . $signature;
+
+        if (! Cache::has($cacheKey)) {
+            Cache::put($cacheKey, 0, $windowSeconds);
+        }
+
+        $count = Cache::increment($cacheKey);
+        $count = is_int($count) ? $count : (int) $count;
+
+        if ($count % $threshold !== 0) {
+            return;
+        }
+
+        $report = $this->buildReport($exception, $this->currentRequest());
+        $report['subject'] = Str::limit(
+            '[' . $this->appName() . '] Digest: ' . $count . ' repeated ' . $exception::class . ' reports',
+            180,
+            '...',
+        );
+        $report['digest'] = [
+            'count' => $count,
+            'threshold' => $threshold,
+            'window_seconds' => $windowSeconds,
+            'signature' => $signature,
+            'grouped_at' => now()->toDayDateTimeString(),
+        ];
+
+        Mail::to($recipient)->queue(new UnhandledExceptionReported($report));
     }
 
     private function signature(Throwable $exception): string
