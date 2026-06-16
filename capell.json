@@ -50,7 +50,11 @@
     },
     "settings": [],
     "permissions": [],
-    "capabilities": ["transactional-email", "exception-report-digests"],
+    "capabilities": [
+        "transactional-email",
+        "exception-report-digests",
+        "exception-report-webhooks"
+    ],
     "security": {
         "riskTier": "low",
         "publicSurface": {
@@ -75,9 +79,9 @@
             "forbidPublicBladeQueries": true
         },
         "externalHttpClients": {
-            "requiresTimeouts": false,
-            "requiresSecretRedaction": false,
-            "clients": []
+            "requiresTimeouts": true,
+            "requiresSecretRedaction": true,
+            "clients": ["configured exception report webhook endpoint"]
         },
         "adminSurface": {
             "authorization": "none",
@@ -112,8 +116,8 @@
         "privateDocsRequested": false
     },
     "marketplace": {
-        "summary": "Email alerting for unhandled Capell exceptions, with request, route, user, and stack-trace context sanitized for safe operator triage.",
-        "description": "Exception Reports gives operators a direct email signal when a Capell app reports an unhandled exception. Reports include the app, environment, exception class, message, request route, route parameters, current user, request identifiers, and stack trace, then strip unsafe diagnostic markup before the email renders. Signature and global rate limits keep repeated failures from flooding the queue, with optional grouped digest emails for repeated suppressed signatures.",
+        "summary": "Email and optional webhook alerting for unhandled Capell exceptions, with request, route, user, and stack-trace context sanitized for safe operator triage.",
+        "description": "Exception Reports gives operators a direct email signal when a Capell app reports an unhandled exception, plus an optional sanitized webhook payload for incident channels. Reports include the app, environment, exception class, message, request route, route parameters, current user, request identifiers, and stack trace, then strip unsafe diagnostic markup before delivery. Signature and global rate limits keep repeated failures from flooding the queue, with optional grouped digest emails for repeated suppressed signatures.",
         "screenshots": [
             {
                 "path": "docs/assets/marketplace/extension-card.svg",

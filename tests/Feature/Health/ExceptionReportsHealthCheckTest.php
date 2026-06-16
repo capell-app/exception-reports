@@ -7,7 +7,7 @@ use Capell\ExceptionReports\Health\ExceptionReportsHealthCheck;
 it('passes package health checks when configured', function (): void {
     $results = ExceptionReportsHealthCheck::runDiagnostics();
 
-    expect($results)->toHaveCount(7)
+    expect($results)->toHaveCount(8)
         ->and($results->every(fn (mixed $result): bool => $result->passed))->toBeTrue()
         ->and(ExceptionReportsHealthCheck::passed())->toBeTrue();
 });
@@ -58,4 +58,33 @@ it('fails the queue health check when the configured queue connection is missing
 
     expect($result->passed)->toBeFalse()
         ->and($result->remediation)->toContain('QUEUE_CONNECTION');
+});
+
+it('passes the webhook health check when webhooks are disabled', function (): void {
+    config()->set('capell-exception-reports.webhook.enabled', false);
+
+    $result = (new ExceptionReportsHealthCheck)->webhookConfigurationCheck();
+
+    expect($result->passed)->toBeTrue()
+        ->and($result->message)->toContain('disabled');
+});
+
+it('passes the webhook health check when webhooks have a valid endpoint', function (): void {
+    config()->set('capell-exception-reports.webhook.enabled', true);
+    config()->set('capell-exception-reports.webhook.url', 'https://hooks.example.com/exception-reports');
+
+    $result = (new ExceptionReportsHealthCheck)->webhookConfigurationCheck();
+
+    expect($result->passed)->toBeTrue()
+        ->and($result->message)->toContain('valid HTTP endpoint');
+});
+
+it('fails the webhook health check when enabled without an http endpoint', function (): void {
+    config()->set('capell-exception-reports.webhook.enabled', true);
+    config()->set('capell-exception-reports.webhook.url', 'mailto:alerts@example.com');
+
+    $result = (new ExceptionReportsHealthCheck)->webhookConfigurationCheck();
+
+    expect($result->passed)->toBeFalse()
+        ->and($result->remediation)->toContain('CAPELL_EXCEPTION_REPORTS_WEBHOOK_URL');
 });

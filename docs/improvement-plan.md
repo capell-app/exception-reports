@@ -18,10 +18,10 @@ Exception Reports emails operators when Capell reports an unhandled exception. I
 
 ## 3. Missing Features (gaps)
 
-Capabilities declared: `transactional-email`.
+Capabilities declared: `transactional-email`, `exception-report-digests`, and `exception-report-webhooks`.
 
 - **Shipped 2026-06-16: digest/grouping mode.** Repeated rate-limited exception signatures can be grouped into thresholded digest emails with count, threshold, window, signature, and grouped timestamp metadata.
-- **No alternate destinations.** Email is the only reporting destination; teams may want Slack/webhooks later.
+- **Shipped 2026-06-16: optional webhook destination.** Teams can post sanitized JSON reports to configured incident endpoints with timeout enforcement, trace omission by default, and health diagnostics.
 - **No admin inbox.** This package is intentionally console/shared only, but an admin inbox could support triage/history.
 - **No attachment support.** The mailable returns no attachments, which is probably correct for privacy but should be explicit.
 
@@ -37,11 +37,11 @@ Capabilities declared: `transactional-email`.
 
 ## 5. Marketplace & Positioning
 
-Exception Reports should be positioned as lightweight, privacy-aware exception email alerting for Capell teams that are not ready for a full observability stack. For operators, emphasize rate limits, sanitized context, and queued delivery. For developers, emphasize the reportable handler integration and mailable/sanitizer boundary.
+Exception Reports should be positioned as lightweight, privacy-aware exception alerting for Capell teams that are not ready for a full observability stack. For operators, emphasize rate limits, sanitized email and webhook context, and queued delivery. For developers, emphasize the reportable handler integration and sanitizer boundary.
 
 **Current summary:** "Exception Reports emails operators when Capell reports an unhandled exception, including sanitized app, request, route, user, and stack-trace context that is safe to read in an email client."
 
-**Improved summary:** "Privacy-aware exception email reporting for Capell, with rate limits, queued delivery, sanitized request/user/trace context, and install health diagnostics."
+**Improved summary:** "Privacy-aware exception reporting for Capell, with rate limits, queued email, optional sanitized webhooks, request/user/trace context, and install health diagnostics."
 
 **Media status:** SVG email preview and extension card are acceptable for this small console/shared package. Replace with a real rendered email screenshot if the mail template changes.
 
@@ -56,7 +56,7 @@ Exception Reports should be positioned as lightweight, privacy-aware exception e
 | Add mailer/queue/from-address/fallback health diagnostics | Done   | S      | Medium | §2.3, §4.3  |
 | Document rate limits, queue behavior, and sanitizer scope | Done   | S      | Medium | §2.4, §4.4  |
 | Add digest/grouping mode                                  | Done   | M      | Medium | §3          |
-| Add optional Slack/webhook destination                    | Next   | M      | Medium | §3, §5      |
+| Add optional Slack/webhook destination                    | Done   | M      | Medium | §3, §5      |
 | Add rendered email screenshot from real template          | Next   | S      | Low    | §5          |
 | Add admin inbox/history surface                           | Later  | L      | Medium | §3          |
 | Add escalation policies by environment/severity           | Later  | M      | Medium | §5          |

@@ -38,6 +38,7 @@ final class ExceptionReportsHealthCheck implements ChecksExtensionHealth
             $check->queueConnectionConfiguredCheck(),
             $check->mailViewCheck(),
             $check->rateLimiterCheck(),
+            $check->webhookConfigurationCheck(),
         ]);
     }
 
@@ -169,6 +170,25 @@ final class ExceptionReportsHealthCheck implements ChecksExtensionHealth
         );
     }
 
+    public function webhookConfigurationCheck(): DoctorCheckResultData
+    {
+        $enabled = (bool) config('capell-exception-reports.webhook.enabled', false);
+        $ready = ! $enabled || $this->webhookUrlIsValid();
+
+        return new DoctorCheckResultData(
+            label: (string) __('capell-exception-reports::package.health.webhook.label'),
+            passed: $ready,
+            message: match (true) {
+                ! $enabled => (string) __('capell-exception-reports::package.health.webhook.disabled'),
+                $ready => (string) __('capell-exception-reports::package.health.webhook.ready'),
+                default => (string) __('capell-exception-reports::package.health.webhook.not_ready'),
+            },
+            remediation: $ready
+                ? null
+                : (string) __('capell-exception-reports::package.health.webhook.remediation'),
+        );
+    }
+
     private function handlerCanRegisterReportables(): bool
     {
         try {
@@ -219,6 +239,15 @@ final class ExceptionReportsHealthCheck implements ChecksExtensionHealth
         } catch (Throwable) {
             return false;
         }
+    }
+
+    private function webhookUrlIsValid(): bool
+    {
+        $url = $this->stringConfig('capell-exception-reports.webhook.url');
+
+        return $url !== null
+            && filter_var($url, FILTER_VALIDATE_URL) !== false
+            && in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true);
     }
 
     private function recipient(): ?string

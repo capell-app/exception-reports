@@ -156,6 +156,7 @@ it('declares extension metadata and runtime provider', function (): void {
         ->and($capabilities)->toBe([
             PackageCapability::TransactionalEmail->value,
             'exception-report-digests',
+            'exception-report-webhooks',
         ])
         ->and(exceptionReportsManifestList($providers, 'runtime'))->toContain(ExceptionReportsServiceProvider::class)
         ->and($actions)->toHaveKey('reportExceptionByEmail', ReportExceptionByEmailAction::class)

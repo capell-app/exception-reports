@@ -10,6 +10,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
@@ -25,21 +26,30 @@ final class ReportExceptionByEmailAction
     public function handle(Throwable $exception): void
     {
         $recipient = $this->recipient();
+        $webhookUrl = $this->webhookUrl();
 
-        if ($recipient === null) {
+        if ($recipient === null && $webhookUrl === null) {
             return;
         }
 
         try {
             if (! $this->canReport($exception)) {
-                $this->queueDigestIfNeeded($exception, $recipient);
+                if ($recipient !== null) {
+                    $this->queueDigestIfNeeded($exception, $recipient);
+                }
 
                 return;
             }
 
             $report = $this->buildReport($exception, $this->currentRequest());
 
-            Mail::to($recipient)->queue(new UnhandledExceptionReported($report));
+            if ($recipient !== null) {
+                Mail::to($recipient)->queue(new UnhandledExceptionReported($report));
+            }
+
+            if ($webhookUrl !== null) {
+                $this->sendWebhook($webhookUrl, $report, $exception);
+            }
         } catch (Throwable $reporterFailure) {
             $this->logReporterFailure($reporterFailure, $exception);
         }
@@ -241,6 +251,43 @@ final class ReportExceptionByEmailAction
         return is_string($recipient) && $recipient !== '' ? $recipient : null;
     }
 
+    private function webhookUrl(): ?string
+    {
+        if (! (bool) config('capell-exception-reports.webhook.enabled', false)) {
+            return null;
+        }
+
+        $url = config('capell-exception-reports.webhook.url');
+
+        return is_string($url) && $url !== '' ? $url : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $report
+     */
+    private function sendWebhook(string $url, array $report, Throwable $exception): void
+    {
+        try {
+            $payload = [
+                'event' => 'exception.reported',
+                'package' => 'capell-app/exception-reports',
+                'subject' => $report['subject'] ?? null,
+                'report' => resolve(ExceptionReportMailSanitizer::class)->sanitize($report),
+            ];
+
+            if (! (bool) config('capell-exception-reports.webhook.include_trace', false)) {
+                unset($payload['report']['trace']);
+            }
+
+            Http::acceptJson()
+                ->timeout($this->positiveIntegerConfig('capell-exception-reports.webhook.timeout_seconds', 5))
+                ->post($url, $payload)
+                ->throw();
+        } catch (Throwable $webhookFailure) {
+            $this->logWebhookFailure($webhookFailure, $exception);
+        }
+    }
+
     private function appName(): string
     {
         $appName = config('app.name');
@@ -396,6 +443,25 @@ final class ReportExceptionByEmailAction
                 resolve(ExceptionReportMailSanitizer::class)->sanitizeLogContext([
                     'reporter_exception' => $reporterFailure::class,
                     'reporter_message' => Str::limit($reporterFailure->getMessage(), 500, '...'),
+                    'original_exception' => $originalException::class,
+                    'original_message' => Str::limit($originalException->getMessage(), 500, '...'),
+                    'original_file' => $originalException->getFile(),
+                    'original_line' => $originalException->getLine(),
+                ]),
+            );
+        } catch (Throwable) {
+            //
+        }
+    }
+
+    private function logWebhookFailure(Throwable $webhookFailure, Throwable $originalException): void
+    {
+        try {
+            Log::warning(
+                'Exception Reports failed to deliver an exception webhook.',
+                resolve(ExceptionReportMailSanitizer::class)->sanitizeLogContext([
+                    'webhook_exception' => $webhookFailure::class,
+                    'webhook_message' => Str::limit($webhookFailure->getMessage(), 500, '...'),
                     'original_exception' => $originalException::class,
                     'original_message' => Str::limit($originalException->getMessage(), 500, '...'),
                     'original_file' => $originalException->getFile(),
