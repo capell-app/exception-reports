@@ -47,5 +47,12 @@ return [
             'not_ready' => 'The cache-backed rate limiter or exception handler is unavailable.',
             'remediation' => 'Ensure the Laravel cache service and exception handler can be resolved.',
         ],
+        'webhook' => [
+            'label' => 'Exception report webhook',
+            'ready' => 'The optional exception report webhook has a valid HTTP endpoint.',
+            'disabled' => 'The optional exception report webhook is disabled.',
+            'not_ready' => 'The optional exception report webhook is enabled without a valid HTTP endpoint.',
+            'remediation' => 'Set CAPELL_EXCEPTION_REPORTS_WEBHOOK_URL to an http or https endpoint, or disable CAPELL_EXCEPTION_REPORTS_WEBHOOK_ENABLED.',
+        ],
     ],
 ];

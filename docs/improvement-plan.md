@@ -18,10 +18,10 @@ Exception Reports emails operators when Capell reports an unhandled exception. I
 
 ## 3. Missing Features (gaps)
 
-Capabilities declared: `transactional-email`.
+Capabilities declared: `transactional-email`, `exception-report-digests`, and `exception-report-webhooks`.
 
-- **No digest/grouping mode.** Repeated exceptions are rate-limited but not grouped into a digest.
-- **No alternate destinations.** Email is the only reporting destination; teams may want Slack/webhooks later.
+- **Shipped 2026-06-16: digest/grouping mode.** Repeated rate-limited exception signatures can be grouped into thresholded digest emails with count, threshold, window, signature, and grouped timestamp metadata.
+- **Shipped 2026-06-16: optional webhook destination.** Teams can post sanitized JSON reports to configured incident endpoints with timeout enforcement, trace omission by default, and health diagnostics.
 - **No admin inbox.** This package is intentionally console/shared only, but an admin inbox could support triage/history.
 - **No attachment support.** The mailable returns no attachments, which is probably correct for privacy but should be explicit.
 
@@ -37,13 +37,13 @@ Capabilities declared: `transactional-email`.
 
 ## 5. Marketplace & Positioning
 
-Exception Reports should be positioned as lightweight, privacy-aware exception email alerting for Capell teams that are not ready for a full observability stack. For operators, emphasize rate limits, sanitized context, and queued delivery. For developers, emphasize the reportable handler integration and mailable/sanitizer boundary.
+Exception Reports should be positioned as lightweight, privacy-aware exception alerting for Capell teams that are not ready for a full observability stack. For operators, emphasize rate limits, sanitized email and webhook context, and queued delivery. For developers, emphasize the reportable handler integration and sanitizer boundary.
 
 **Current summary:** "Exception Reports emails operators when Capell reports an unhandled exception, including sanitized app, request, route, user, and stack-trace context that is safe to read in an email client."
 
-**Improved summary:** "Privacy-aware exception email reporting for Capell, with rate limits, queued delivery, sanitized request/user/trace context, and install health diagnostics."
+**Improved summary:** "Privacy-aware exception reporting for Capell, with rate limits, queued email, optional sanitized webhooks, request/user/trace context, and install health diagnostics."
 
-**Media status:** SVG email preview and extension card are acceptable for this small console/shared package. Replace with a real rendered email screenshot if the mail template changes.
+**Media status:** The extension card remains an SVG marketplace asset. The email preview is now a committed PNG captured from the rendered Markdown mailable, with fixture coverage proving secret redaction and unsafe diagnostic stripping remain visible in the preview.
 
 **Cross-sell:** Diagnostics, Email Studio, Nightwatch configuration, Deployments, Site Monitor.
 
@@ -51,19 +51,19 @@ Exception Reports should be positioned as lightweight, privacy-aware exception e
 
 | Item                                                      | Bucket | Effort | Impact | Section ref |
 | --------------------------------------------------------- | ------ | ------ | ------ | ----------- |
-| Redact common secrets/tokens/authorization data           | Now    | M      | High   | §2.1, §4.1  |
-| Log or emit safe reporter failures without recursion      | Now    | M      | High   | §2.2, §4.2  |
-| Add mailer/queue/from-address/fallback health diagnostics | Now    | S      | Medium | §2.3, §4.3  |
-| Document rate limits, queue behavior, and sanitizer scope | Now    | S      | Medium | §2.4, §4.4  |
-| Add digest/grouping mode                                  | Next   | M      | Medium | §3          |
-| Add optional Slack/webhook destination                    | Next   | M      | Medium | §3, §5      |
-| Add rendered email screenshot from real template          | Next   | S      | Low    | §5          |
+| Redact common secrets/tokens/authorization data           | Done   | M      | High   | §2.1, §4.1  |
+| Log or emit safe reporter failures without recursion      | Done   | M      | High   | §2.2, §4.2  |
+| Add mailer/queue/from-address/fallback health diagnostics | Done   | S      | Medium | §2.3, §4.3  |
+| Document rate limits, queue behavior, and sanitizer scope | Done   | S      | Medium | §2.4, §4.4  |
+| Add digest/grouping mode                                  | Done   | M      | Medium | §3          |
+| Add optional Slack/webhook destination                    | Done   | M      | Medium | §3, §5      |
+| Add rendered email screenshot from real template          | Done   | S      | Low    | §5          |
 | Add admin inbox/history surface                           | Later  | L      | Medium | §3          |
 | Add escalation policies by environment/severity           | Later  | M      | Medium | §5          |
 
 ## 7. Verification
 
-Plan-writing review only; no commands were run for this package in this pass. First implementation slice should start with:
+Implementation slices shipped the current Now rows. Re-run the package verification with:
 
 ```bash
 vendor/bin/pest packages/exception-reports/tests --configuration=phpunit.xml
@@ -80,7 +80,7 @@ vendor/bin/pest packages/exception-reports/tests/Feature/ExceptionEmailReporting
 - [x] Package plan created from current code, manifest, docs, screenshots, and tests.
 - [x] Comprehensive local review pass completed for provider, Action, mailable, sanitizer, health, docs, screenshots, and tests.
 - [x] Capell audience pass completed for operators, developers, and buyers.
-- [ ] Approved implementation slices shipped.
-- [ ] Focused Exception Reports verification passed.
-- [ ] Package tests passed.
-- [ ] Repo preflight passed for changed files.
+- [x] Approved implementation slices shipped.
+- [x] Focused Exception Reports verification passed.
+- [x] Package tests passed.
+- [x] Repo preflight passed for changed files.

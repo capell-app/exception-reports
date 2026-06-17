@@ -5,8 +5,10 @@ declare(strict_types=1);
 use Capell\ExceptionReports\Actions\ReportExceptionByEmailAction;
 use Capell\ExceptionReports\Mail\UnhandledExceptionReported;
 use Illuminate\Contracts\Container\BindingResolutionException;
+use Illuminate\Http\Client\Request as HttpClientRequest;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
@@ -58,6 +60,75 @@ it('queues exception reports by email', function (): void {
             && is_string($trace)
             && str_contains($trace, __FILE__);
     });
+});
+
+it('queues grouped digest emails for repeated rate limited exception signatures', function (): void {
+    Mail::fake();
+    config()->set('capell-exception-reports.digest.enabled', true);
+    config()->set('capell-exception-reports.digest.threshold', 2);
+    config()->set('capell-exception-reports.digest.window_seconds', 900);
+
+    $exception = new RuntimeException('Digest this repeated failure');
+
+    ReportExceptionByEmailAction::run($exception);
+    ReportExceptionByEmailAction::run($exception);
+    ReportExceptionByEmailAction::run($exception);
+
+    Mail::assertQueued(UnhandledExceptionReported::class, 2);
+    Mail::assertQueued(UnhandledExceptionReported::class, function (UnhandledExceptionReported $mail): bool {
+        $digest = exceptionReportsTestArrayValue($mail->report, 'digest');
+
+        return $mail->hasTo('alerts@example.com')
+            && str_contains($mail->envelope()->subject, 'Digest: 2 repeated')
+            && $digest['count'] === 2
+            && $digest['threshold'] === 2
+            && $digest['window_seconds'] === 900
+            && is_string($digest['signature'])
+            && str_contains((string) $mail->render(), 'Digest')
+            && str_contains((string) $mail->render(), '2 suppressed reports');
+    });
+});
+
+it('posts sanitized exception reports to an optional webhook destination', function (): void {
+    Mail::fake();
+    Http::fake([
+        'https://hooks.example.com/exception-reports' => Http::response(['ok' => true]),
+    ]);
+
+    config()->set('capell-exception-reports.webhook.enabled', true);
+    config()->set('capell-exception-reports.webhook.url', 'https://hooks.example.com/exception-reports');
+
+    ReportExceptionByEmailAction::run(new RuntimeException('Webhook failed token=secret-token'));
+
+    Mail::assertQueued(UnhandledExceptionReported::class, 1);
+    Http::assertSent(function (HttpClientRequest $request): bool {
+        $report = $request['report'];
+
+        return $request->url() === 'https://hooks.example.com/exception-reports'
+            && $request['event'] === 'exception.reported'
+            && $request['package'] === 'capell-app/exception-reports'
+            && is_array($report)
+            && ($report['summary']['exception'] ?? null) === RuntimeException::class
+            && ($report['summary']['message'] ?? null) === 'Webhook failed token=[redacted]'
+            && ! array_key_exists('trace', $report);
+    });
+});
+
+it('can deliver webhook reports when no email recipient is configured', function (): void {
+    Mail::fake();
+    Http::fake([
+        'https://hooks.example.com/exception-reports' => Http::response(['ok' => true]),
+    ]);
+
+    config()->set('capell-exception-reports.recipient', null);
+    config()->set('services.exception_reports.to', null);
+    config()->set('capell-exception-reports.webhook.enabled', true);
+    config()->set('capell-exception-reports.webhook.url', 'https://hooks.example.com/exception-reports');
+
+    ReportExceptionByEmailAction::run(new RuntimeException('Webhook only failure'));
+
+    Mail::assertNothingQueued();
+    Http::assertSentCount(1);
 });
 
 it('never masks cache binding failures', function (): void {
