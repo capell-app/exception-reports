@@ -32,6 +32,26 @@ Screenshot contract: `screenshots.json`.
 - Exception Reports extension card (marketplace, required).
 - Exception Reports email preview (email, required).
 
+## Screenshot Evidence
+
+These captures are the package-owned visual contract for the admin pages, public pages, actions, workflows, and feature surfaces described above. Keep this section aligned with `docs/screenshots.json` whenever the package surface changes.
+
+### Exception Reports extension card
+
+![Exception Reports extension card](screenshots/extension-card.svg)
+
+- Surface: marketplace · Target: extension-card.
+- Documents: An operator reviews the extension card before enabling exception email reporting.
+- Capture notes: Committed Marketplace card preview for Exception Reports.
+
+### Exception Reports rendered email preview
+
+![Exception Reports rendered email preview](screenshots/exception-email-preview.png)
+
+- Surface: email · Target: exception-email-preview.
+- Documents: An operator verifies the report email includes useful context without unsafe diagnostic markup.
+- Capture notes: Committed PNG captured from the rendered sanitized exception report mailable.
+
 ## Technical Shape
 
 - Service providers: `Capell\ExceptionReports\Providers\ExceptionReportsServiceProvider`.
