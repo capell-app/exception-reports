@@ -6,7 +6,7 @@
 
 Exception Reports is an **Available**, **No schema impact** Capell package in the **Capell Operations** product group. It ships as `capell-app/exception-reports` and extends these surfaces: console, shared.
 
-Exception Reports emails operators when Capell reports an unhandled exception, with optional sanitized webhook delivery for incident channels. Reports include sanitized app, request, route, user, and stack-trace context that is safe to read in an email client.
+Exception Reports emails operators when Capell reports an unhandled exception, including sanitized app, request, route, user, and stack-trace context that is safe to read in an email client.
 
 After install, the package is operated through console commands or background maintenance hooks.
 
@@ -23,14 +23,14 @@ Status details:
 
 **For developers:** The package gives developers package-owned service providers, Actions, and Blade views instead of pushing this behaviour into core or application code.
 
-**For teams:** Email alerting for unhandled Capell exceptions, with request, route, user, and stack-trace context sanitized for safe operator triage.
+**For teams:** Email and optional webhook alerting for unhandled Capell exceptions, with request, route, user, and stack-trace context sanitized for safe operator triage.
 
 ## Screens And Workflow
 
 Screenshot contract: `screenshots.json`.
 
 - Exception Reports extension card (marketplace, required).
-- Exception Reports email preview (email, required).
+- Exception Reports rendered email preview (email, required).
 
 ## Technical Shape
 
@@ -58,20 +58,9 @@ Docs gap: document extension points here if the package delegates persistence to
 - Cache tags: none declared.
 - Commands: none declared.
 
-## Operational Safeguards
-
-- Exception alerts are rate-limited to protect operators during repeated failures.
-- Optional digest mode groups repeated rate-limited exception signatures and sends a digest email every configured threshold.
-- Mail delivery uses the host mail/queue configuration; health diagnostics check the recipient, from address, mailer, and queue readiness.
-- Optional webhook delivery posts sanitized JSON to `CAPELL_EXCEPTION_REPORTS_WEBHOOK_URL` with a timeout. Stack traces are omitted unless `CAPELL_EXCEPTION_REPORTS_WEBHOOK_INCLUDE_TRACE=true`.
-- Sanitization covers common secret-bearing values such as passwords, API keys, bearer tokens, cookies, sessions, signatures, signed URLs, and authorization headers.
-- The mailable intentionally omits attachments and raw request bodies so report payloads stay small and privacy-aware.
-- Reporter failures are logged once with redacted context and are not fed back into the exception reporter.
-
 ## Common Pitfalls
 
 - Run package commands from the host app; in this repository use `vendor/bin/pest` for package tests.
-- Use a disposable recipient when testing exception delivery, and avoid using live secrets in reproduction payloads.
 - Keep `composer.json`, `composer.local.json`, `capell.json`, docs, screenshots, and tests aligned when the package surface changes.
 
 ## Troubleshooting
@@ -79,10 +68,6 @@ Docs gap: document extension points here if the package delegates persistence to
 | Symptom | Likely cause | Check | Fix |
 | --- | --- | --- | --- |
 | Package surface is missing after install | Provider or manifest is not loaded | Confirm `capell.json`, package `composer.json`, and provider registration | Reinstall the package, refresh Composer autoload, and clear host caches |
-| No exception email arrives | Missing recipient, sender, queue worker, or mail transport | Check health diagnostics and host mail logs | Configure an explicit recipient/from address and start the queue worker if the host queues mail |
-| Webhook alerts do not send | Webhook disabled, missing URL, invalid URL, or remote endpoint failure | Check health diagnostics, `CAPELL_EXCEPTION_REPORTS_WEBHOOK_*` config, and host logs | Configure an HTTPS endpoint and keep the timeout low enough for exception paths |
-| Repeated failures only send one normal alert | Signature rate limiting is suppressing duplicates | Check `capell-exception-reports.digest.enabled`, `threshold`, and `window_seconds` | Enable digest mode if operators need grouped repeated-failure emails |
-| Operators need more context than the email shows | Sanitizer or omission policy removed sensitive payloads | Review the source exception and non-secret route/request metadata | Add safe application context before throwing; do not weaken the sanitizer for raw secrets |
 
 ## Quick Start
 
