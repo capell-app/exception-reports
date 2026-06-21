@@ -40,6 +40,16 @@ function exceptionReportsTestArrayValue(array $values, string $key): array
     return $result;
 }
 
+/**
+ * @param  array<string, mixed>  $values
+ */
+function exceptionReportsTestStringValue(array $values, string $key): ?string
+{
+    $value = $values[$key] ?? null;
+
+    return is_string($value) ? $value : null;
+}
+
 beforeEach(function (): void {
     Cache::flush();
     config()->set('capell-exception-reports.recipient', 'alerts@example.com');
@@ -52,12 +62,11 @@ it('queues exception reports by email', function (): void {
 
     Mail::assertQueued(UnhandledExceptionReported::class, function (UnhandledExceptionReported $mail): bool {
         $summary = exceptionReportsTestArrayValue($mail->report, 'summary');
-        $trace = $mail->report['trace'] ?? '';
+        $trace = exceptionReportsTestStringValue($mail->report, 'trace') ?? '';
 
         return $mail->hasTo('alerts@example.com')
             && $summary['exception'] === RuntimeException::class
             && $summary['message'] === 'Something broke'
-            && is_string($trace)
             && str_contains($trace, __FILE__);
     });
 });
@@ -77,9 +86,10 @@ it('queues grouped digest emails for repeated rate limited exception signatures'
     Mail::assertQueued(UnhandledExceptionReported::class, 2);
     Mail::assertQueued(UnhandledExceptionReported::class, function (UnhandledExceptionReported $mail): bool {
         $digest = exceptionReportsTestArrayValue($mail->report, 'digest');
+        $subject = $mail->envelope()->subject ?? '';
 
         return $mail->hasTo('alerts@example.com')
-            && str_contains($mail->envelope()->subject, 'Digest: 2 repeated')
+            && str_contains($subject, 'Digest: 2 repeated')
             && $digest['count'] === 2
             && $digest['threshold'] === 2
             && $digest['window_seconds'] === 900
@@ -103,13 +113,17 @@ it('posts sanitized exception reports to an optional webhook destination', funct
     Mail::assertQueued(UnhandledExceptionReported::class, 1);
     Http::assertSent(function (HttpClientRequest $request): bool {
         $report = $request['report'];
+        $summary = is_array($report) && is_array($report['summary'] ?? null)
+            ? $report['summary']
+            : null;
 
         return $request->url() === 'https://hooks.example.com/exception-reports'
             && $request['event'] === 'exception.reported'
             && $request['package'] === 'capell-app/exception-reports'
             && is_array($report)
-            && ($report['summary']['exception'] ?? null) === RuntimeException::class
-            && ($report['summary']['message'] ?? null) === 'Webhook failed token=[redacted]'
+            && is_array($summary)
+            && ($summary['exception'] ?? null) === RuntimeException::class
+            && ($summary['message'] ?? null) === 'Webhook failed token=[redacted]'
             && ! array_key_exists('trace', $report);
     });
 });
