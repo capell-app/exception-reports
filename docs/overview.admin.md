@@ -1,7 +1,3 @@
-# Exception Reports
-
-<!-- prettier-ignore-start -->
-
 ## What it does for you
 
 Exception Reports collects the technical errors your site runs into and sends them where you choose, so problems don't go unnoticed. As an owner you mostly decide who is notified and pass reports to your developer.
@@ -26,10 +22,3 @@ Errors are collected under **Exception Reports** in the admin.
 - Errors are collected here so they are not missed.
 - Set a recipient so the right person hears about problems.
 - Share the report with your developer; the detail is technical and for them.
-
----
-
-For how to use Exception Reports, see the [admin guide](admin-guide.md).
-For developers: see the [README](../README.md).
-
-<!-- prettier-ignore-end -->
