@@ -50,11 +50,7 @@
     },
     "settings": [],
     "permissions": [],
-    "capabilities": [
-        "transactional-email",
-        "exception-report-digests",
-        "exception-report-webhooks"
-    ],
+    "capabilities": ["transactional-email"],
     "security": {
         "riskTier": "standard",
         "publicSurface": {
