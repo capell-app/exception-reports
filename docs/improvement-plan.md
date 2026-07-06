@@ -18,8 +18,8 @@ This is a first-phase plan pass only. It records the current package shape, conf
 
 - Add secret redaction before queue serialization and mail rendering. The queued mailable payload should never contain raw signed URL signatures, tokenized route values, credential-like query parameters, API keys, passwords, authorization codes, or reset/preview tokens.
 - Split safety concerns into explicit behaviors:
-  - HTML/control-character sanitization protects the email client.
-  - Secret redaction protects operators, mailbox search, failed-job storage, queue payloads, and forwarded emails.
+    - HTML/control-character sanitization protects the email client.
+    - Secret redaction protects operators, mailbox search, failed-job storage, queue payloads, and forwarded emails.
 - Introduce a small typed report boundary under `src/Data/` so the Action, Mailable, sanitizer/redactor, Blade view, and tests stop sharing unstructured arrays.
 - Keep rate limiting and failure masking, but add tests for disabled reporting, missing recipients, and legacy recipient fallback so the operational contract is explicit.
 - Tighten health diagnostics to validate recipient shape and mail-render readiness without accidentally sending email.
