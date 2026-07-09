@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use Capell\ExceptionReports\Actions\QueueRateLimitedExceptionDigestAction;
 use Capell\ExceptionReports\Actions\ReportExceptionByEmailAction;
+use Capell\ExceptionReports\Actions\SendExceptionReportWebhookAction;
 use Capell\ExceptionReports\Mail\UnhandledExceptionReported;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Http\Client\Request as HttpClientRequest;
@@ -99,6 +101,40 @@ it('queues grouped digest emails for repeated rate limited exception signatures'
     });
 });
 
+it('queues rate limited digest emails through a dedicated action', function (): void {
+    Mail::fake();
+    config()->set('capell-exception-reports.digest.enabled', true);
+    config()->set('capell-exception-reports.digest.threshold', 2);
+    config()->set('capell-exception-reports.digest.window_seconds', 900);
+
+    $exception = new RuntimeException('Digest action failure');
+    $report = [
+        'subject' => '[Capell] RuntimeException in file: Example.php:10',
+        'source' => 'file: Example.php:10',
+        'summary' => [
+            'exception' => RuntimeException::class,
+            'message' => 'Digest action failure',
+        ],
+        'request' => [],
+        'console' => null,
+        'user' => null,
+        'trace' => 'trace',
+    ];
+
+    QueueRateLimitedExceptionDigestAction::run($exception, 'alerts@example.com', $report);
+    QueueRateLimitedExceptionDigestAction::run($exception, 'alerts@example.com', $report);
+
+    Mail::assertQueued(UnhandledExceptionReported::class, function (UnhandledExceptionReported $mail): bool {
+        $digest = exceptionReportsTestArrayValue($mail->report, 'digest');
+
+        return $mail->hasTo('alerts@example.com')
+            && str_contains($mail->envelope()->subject ?? '', 'Digest: 2 repeated')
+            && $digest['count'] === 2
+            && $digest['threshold'] === 2
+            && $digest['window_seconds'] === 900;
+    });
+});
+
 it('posts sanitized exception reports to an optional webhook destination', function (): void {
     Mail::fake();
     Http::fake([
@@ -124,6 +160,43 @@ it('posts sanitized exception reports to an optional webhook destination', funct
             && is_array($summary)
             && ($summary['exception'] ?? null) === RuntimeException::class
             && ($summary['message'] ?? null) === 'Webhook failed token=[redacted]'
+            && ! array_key_exists('trace', $report);
+    });
+});
+
+it('delivers sanitized webhook payloads through a dedicated action', function (): void {
+    Http::fake([
+        'https://hooks.example.com/exception-reports' => Http::response(['ok' => true]),
+    ]);
+
+    SendExceptionReportWebhookAction::run(
+        'https://hooks.example.com/exception-reports',
+        [
+            'subject' => '[Capell] RuntimeException in webhook test',
+            'source' => 'route: webhook.test',
+            'summary' => [
+                'exception' => RuntimeException::class,
+                'message' => 'Webhook action failed token=secret-token',
+            ],
+            'request' => [],
+            'console' => null,
+            'user' => null,
+            'trace' => 'secret trace',
+        ],
+        new RuntimeException('Webhook action failure'),
+    );
+
+    Http::assertSent(function (HttpClientRequest $request): bool {
+        $report = $request['report'];
+        $summary = is_array($report) && is_array($report['summary'] ?? null)
+            ? $report['summary']
+            : null;
+
+        return $request->url() === 'https://hooks.example.com/exception-reports'
+            && $request['event'] === 'exception.reported'
+            && is_array($report)
+            && is_array($summary)
+            && ($summary['message'] ?? null) === 'Webhook action failed token=[redacted]'
             && ! array_key_exists('trace', $report);
     });
 });
