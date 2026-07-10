@@ -69,7 +69,25 @@ it('queues exception reports by email', function (): void {
         return $mail->hasTo('alerts@example.com')
             && $summary['exception'] === RuntimeException::class
             && $summary['message'] === 'Something broke'
-            && str_contains($trace, __FILE__);
+            && $trace === 'n/a';
+    });
+});
+
+it('does not serialize request secrets into queued exception reports', function (): void {
+    Mail::fake();
+
+    Route::get('/exception-report-queue/{token}', function (): never {
+        throw new RuntimeException('Provider failure token=message-secret');
+    });
+
+    $this->get('/exception-report-queue/route-secret?signature=query-secret');
+
+    Mail::assertQueued(UnhandledExceptionReported::class, function (UnhandledExceptionReported $mail): bool {
+        $serializedMail = serialize($mail);
+
+        return ! str_contains($serializedMail, 'route-secret')
+            && ! str_contains($serializedMail, 'query-secret')
+            && ! str_contains($serializedMail, 'message-secret');
     });
 });
 

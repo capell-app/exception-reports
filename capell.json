@@ -63,12 +63,14 @@
             "throttledRoutes": []
         },
         "sensitiveData": {
-            "encryptedFields": [],
+            "encryptedFields": ["queue.unhandled_exception_reported.report"],
             "hashedTokenFields": [],
             "redactedOutputClasses": [
                 "Capell\\ExceptionReports\\Support\\ExceptionReportMailSanitizer"
             ],
-            "plaintextJustifications": []
+            "plaintextJustifications": [
+                "Exception reports are minimized and redacted synchronously before queue serialization; queue encryption is configured by the host."
+            ]
         },
         "publicOutput": {
             "cacheSafe": false,

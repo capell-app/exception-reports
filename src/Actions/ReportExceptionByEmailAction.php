@@ -6,7 +6,6 @@ namespace Capell\ExceptionReports\Actions;
 
 use Capell\ExceptionReports\Mail\UnhandledExceptionReported;
 use Capell\ExceptionReports\Support\ExceptionReportMailSanitizer;
-use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Log;
@@ -14,7 +13,6 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsObject;
-use Stringable;
 use Throwable;
 
 final class ReportExceptionByEmailAction
@@ -43,7 +41,9 @@ final class ReportExceptionByEmailAction
                 return;
             }
 
-            $report = $this->buildReport($exception, $this->currentRequest());
+            $report = resolve(ExceptionReportMailSanitizer::class)->sanitize(
+                $this->buildReport($exception, $this->currentRequest()),
+            );
 
             if ($recipient !== null) {
                 Mail::to($recipient)->queue(new UnhandledExceptionReported($report));
@@ -65,9 +65,6 @@ final class ReportExceptionByEmailAction
         $route = $request?->route();
         $route = $route instanceof Route ? $route : null;
 
-        $user = $request?->user();
-        $user = $user instanceof Authenticatable ? $user : null;
-
         $source = $this->source($exception, $request, $route);
 
         return [
@@ -84,20 +81,13 @@ final class ReportExceptionByEmailAction
             ],
             'request' => [
                 'method' => $request?->method(),
-                'url' => $request?->fullUrl(),
                 'path' => $request?->path(),
                 'route_name' => $route?->getName(),
-                'route_action' => $route?->getActionName(),
-                'route_parameters' => $this->routeParameters($route),
-                'ip_address' => $request?->ip(),
-                'referer' => $request?->headers->get('referer'),
-                'browser' => $request?->userAgent(),
-                'accept' => $request?->headers->get('accept'),
                 'request_id' => $request?->headers->get('x-request-id') ?? $request?->headers->get('x-correlation-id'),
             ],
             'console' => $this->consoleContext(),
-            'user' => $this->userContext($user),
-            'trace' => $exception->getTraceAsString(),
+            'user' => null,
+            'trace' => (bool) config('capell-exception-reports.include_trace', false) ? $exception->getTraceAsString() : null,
         ];
     }
 
@@ -142,36 +132,6 @@ final class ReportExceptionByEmailAction
             180,
             '...',
         );
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function routeParameters(?Route $route): array
-    {
-        if (! $route instanceof Route) {
-            return [];
-        }
-
-        return collect($route->parameters())
-            ->map(fn (mixed $value): mixed => $this->routeParameterValue($value))
-            ->all();
-    }
-
-    /**
-     * @return array<string, mixed>|null
-     */
-    private function userContext(?Authenticatable $user): ?array
-    {
-        if (! $user instanceof Authenticatable) {
-            return null;
-        }
-
-        return [
-            'id' => $user->getAuthIdentifier(),
-            'email' => data_get($user, 'email'),
-            'name' => data_get($user, 'name'),
-        ];
     }
 
     private function canReport(Throwable $exception): bool
@@ -232,21 +192,6 @@ final class ReportExceptionByEmailAction
         return is_scalar($appName) ? (string) $appName : 'Laravel';
     }
 
-    private function routeParameterValue(mixed $value): mixed
-    {
-        if (is_scalar($value) || $value === null) {
-            return $value;
-        }
-
-        if ($value instanceof Stringable) {
-            return (string) $value;
-        }
-
-        $encoded = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-
-        return $encoded !== false ? $encoded : get_debug_type($value);
-    }
-
     private function positiveIntegerConfig(string $key, int $default): int
     {
         $value = config($key, $default);
@@ -273,11 +218,7 @@ final class ReportExceptionByEmailAction
 
         $argv = $this->argv();
 
-        return [
-            'command' => $this->consoleCommandName($argv),
-            'arguments' => implode(' ', array_map($this->quoteConsoleArgument(...), $this->consoleArguments($argv))),
-            'command_line' => $this->consoleCommandLine($argv),
-        ];
+        return ['command' => $this->consoleCommandName($argv)];
     }
 
     /**
@@ -310,66 +251,6 @@ final class ReportExceptionByEmailAction
         }
 
         return array_values(array_filter($argv, is_string(...)));
-    }
-
-    /**
-     * @param  array<int, string>  $argv
-     * @return array<int, string>
-     */
-    private function consoleArguments(array $argv): array
-    {
-        return array_map($this->maskConsoleArgument(...), array_slice($argv, 1));
-    }
-
-    /**
-     * @param  array<int, string>  $argv
-     */
-    private function consoleCommandLine(array $argv): string
-    {
-        return Str::limit(implode(' ', array_map($this->quoteConsoleArgument(...), $this->consoleArguments($argv))), 1000, '...');
-    }
-
-    private function maskConsoleArgument(string $argument): string
-    {
-        if (! str_contains($argument, '=')) {
-            return $this->isSensitiveArgumentName($argument) ? $argument . '=***' : $argument;
-        }
-
-        [$name] = explode('=', $argument, 2);
-
-        if (! $this->isSensitiveArgumentName($name)) {
-            return $argument;
-        }
-
-        return $name . '=***';
-    }
-
-    private function isSensitiveArgumentName(string $argument): bool
-    {
-        $normalized = Str::of($argument)
-            ->lower()
-            ->trim('-')
-            ->replace(['_', '-'], '')
-            ->toString();
-
-        return Str::contains($normalized, [
-            'password',
-            'passwd',
-            'secret',
-            'token',
-            'apikey',
-            'accesskey',
-            'privatekey',
-        ]);
-    }
-
-    private function quoteConsoleArgument(string $argument): string
-    {
-        if ($argument === '' || preg_match('/\s/', $argument) === 1) {
-            return escapeshellarg($argument);
-        }
-
-        return $argument;
     }
 
     private function logReporterFailure(Throwable $reporterFailure, Throwable $originalException): void
