@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Capell\ExceptionReports\Actions;
 
+use Capell\ExceptionReports\Data\ExceptionReportData;
 use Capell\ExceptionReports\Mail\UnhandledExceptionReported;
 use Capell\ExceptionReports\Support\ExceptionReportMailSanitizer;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
@@ -36,14 +38,14 @@ final class ReportExceptionByEmailAction
                     QueueRateLimitedExceptionDigestAction::run(
                         $exception,
                         $recipient,
-                        $this->buildReport($exception, $this->currentRequest()),
+                        $this->safeReport($exception, $this->currentRequest()),
                     );
                 }
 
                 return;
             }
 
-            $report = $this->buildReport($exception, $this->currentRequest());
+            $report = $this->safeReport($exception, $this->currentRequest());
 
             if ($recipient !== null) {
                 Mail::to($recipient)->queue(new UnhandledExceptionReported($report));
@@ -60,7 +62,7 @@ final class ReportExceptionByEmailAction
     /**
      * @return array<string, mixed>
      */
-    private function buildReport(Throwable $exception, ?Request $request): array
+    private function safeReport(Throwable $exception, ?Request $request): ExceptionReportData
     {
         $route = $request?->route();
         $route = $route instanceof Route ? $route : null;
@@ -70,7 +72,18 @@ final class ReportExceptionByEmailAction
 
         $source = $this->source($exception, $request, $route);
 
-        return [
+        $requestContext = [
+            'method' => $request?->method(),
+            'path' => $route?->uri() ?? $request?->path(),
+            'route_name' => $route?->getName(),
+            'route_parameters' => $this->routeParameters($route),
+        ];
+
+        if ($this->includeRequestIpAddress()) {
+            $requestContext['ip_address'] = $request?->ip();
+        }
+
+        $report = [
             'subject' => $this->subject($exception, $source),
             'source' => $source,
             'summary' => [
@@ -78,27 +91,19 @@ final class ReportExceptionByEmailAction
                 'environment' => app()->environment(),
                 'exception' => $exception::class,
                 'message' => Str::limit($exception->getMessage(), 500, '...'),
-                'file' => $exception->getFile(),
+                'file' => basename($exception->getFile()),
                 'line' => $exception->getLine(),
                 'reported_at' => now()->toDayDateTimeString(),
             ],
-            'request' => [
-                'method' => $request?->method(),
-                'url' => $request?->fullUrl(),
-                'path' => $request?->path(),
-                'route_name' => $route?->getName(),
-                'route_action' => $route?->getActionName(),
-                'route_parameters' => $this->routeParameters($route),
-                'ip_address' => $request?->ip(),
-                'referer' => $request?->headers->get('referer'),
-                'browser' => $request?->userAgent(),
-                'accept' => $request?->headers->get('accept'),
-                'request_id' => $request?->headers->get('x-request-id') ?? $request?->headers->get('x-correlation-id'),
-            ],
+            'request' => $requestContext,
             'console' => $this->consoleContext(),
             'user' => $this->userContext($user),
-            'trace' => $exception->getTraceAsString(),
+            'trace' => $this->includeTrace() ? $exception->getTraceAsString() : '',
         ];
+
+        $safeReport = resolve(ExceptionReportMailSanitizer::class)->sanitize($report);
+
+        return ExceptionReportData::from($safeReport);
     }
 
     private function currentRequest(): ?Request
@@ -153,7 +158,10 @@ final class ReportExceptionByEmailAction
             return [];
         }
 
+        $allowedParameters = $this->allowedRouteParameters();
+
         return collect($route->parameters())
+            ->filter(static fn (mixed $value, string|int $key): bool => is_string($key) && in_array($key, $allowedParameters, true))
             ->map(fn (mixed $value): mixed => $this->routeParameterValue($value))
             ->all();
     }
@@ -163,7 +171,7 @@ final class ReportExceptionByEmailAction
      */
     private function userContext(?Authenticatable $user): ?array
     {
-        if (! $user instanceof Authenticatable) {
+        if (! $user instanceof Authenticatable || ! (bool) config('capell-exception-reports.privacy.include_user_identity', false)) {
             return null;
         }
 
@@ -182,14 +190,24 @@ final class ReportExceptionByEmailAction
         $signatureAttempts = $this->positiveIntegerConfig('capell-exception-reports.rate_limits.signature_attempts', 1);
         $globalAttempts = $this->positiveIntegerConfig('capell-exception-reports.rate_limits.global_attempts', 10);
 
-        if (RateLimiter::tooManyAttempts($signatureKey, $signatureAttempts) || RateLimiter::tooManyAttempts($globalKey, $globalAttempts)) {
+        $lock = Cache::lock('exception-report-email:rate-limit-lock', 5);
+
+        if (! $lock->get()) {
             return false;
         }
 
-        RateLimiter::hit($signatureKey, $this->positiveIntegerConfig('capell-exception-reports.rate_limits.signature_decay_seconds', 60 * 15));
-        RateLimiter::hit($globalKey, $this->positiveIntegerConfig('capell-exception-reports.rate_limits.global_decay_seconds', 60 * 60));
+        try {
+            if (RateLimiter::tooManyAttempts($signatureKey, $signatureAttempts) || RateLimiter::tooManyAttempts($globalKey, $globalAttempts)) {
+                return false;
+            }
 
-        return true;
+            RateLimiter::hit($signatureKey, $this->positiveIntegerConfig('capell-exception-reports.rate_limits.signature_decay_seconds', 60 * 15));
+            RateLimiter::hit($globalKey, $this->positiveIntegerConfig('capell-exception-reports.rate_limits.global_decay_seconds', 60 * 60));
+
+            return true;
+        } finally {
+            $lock->release();
+        }
     }
 
     private function signature(Throwable $exception): string
@@ -247,6 +265,30 @@ final class ReportExceptionByEmailAction
         return $encoded !== false ? $encoded : get_debug_type($value);
     }
 
+    /**
+     * @return list<string>
+     */
+    private function allowedRouteParameters(): array
+    {
+        $parameters = config('capell-exception-reports.privacy.route_parameter_allowlist', []);
+
+        if (! is_array($parameters)) {
+            return [];
+        }
+
+        return array_values(array_filter($parameters, static fn (mixed $parameter): bool => is_string($parameter) && $parameter !== ''));
+    }
+
+    private function includeRequestIpAddress(): bool
+    {
+        return (bool) config('capell-exception-reports.privacy.include_ip_address', false);
+    }
+
+    private function includeTrace(): bool
+    {
+        return (bool) config('capell-exception-reports.privacy.include_trace', false);
+    }
+
     private function positiveIntegerConfig(string $key, int $default): int
     {
         $value = config($key, $default);
@@ -273,11 +315,7 @@ final class ReportExceptionByEmailAction
 
         $argv = $this->argv();
 
-        return [
-            'command' => $this->consoleCommandName($argv),
-            'arguments' => implode(' ', array_map($this->quoteConsoleArgument(...), $this->consoleArguments($argv))),
-            'command_line' => $this->consoleCommandLine($argv),
-        ];
+        return ['command' => $this->consoleCommandName($argv)];
     }
 
     /**

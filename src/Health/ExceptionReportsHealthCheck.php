@@ -7,6 +7,7 @@ namespace Capell\ExceptionReports\Health;
 use Capell\Core\Contracts\Extensions\ChecksExtensionHealth;
 use Capell\Core\Data\Diagnostics\DoctorCheckResultData;
 use Capell\ExceptionReports\Mail\UnhandledExceptionReported;
+use Capell\ExceptionReports\Data\ExceptionReportData;
 use Capell\ExceptionReports\Providers\ExceptionReportsServiceProvider;
 use Capell\ExceptionReports\Support\ExceptionReportMailSanitizer;
 use Illuminate\Contracts\Debug\ExceptionHandler as ExceptionHandlerContract;
@@ -245,9 +246,27 @@ final class ExceptionReportsHealthCheck implements ChecksExtensionHealth
     {
         $url = $this->stringConfig('capell-exception-reports.webhook.url');
 
+        $host = parse_url($url ?? '', PHP_URL_HOST);
+
         return $url !== null
             && filter_var($url, FILTER_VALIDATE_URL) !== false
-            && in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true);
+            && parse_url($url, PHP_URL_SCHEME) === 'https'
+            && is_string($host)
+            && in_array(strtolower($host), $this->webhookAllowedHosts(), true)
+            && $this->stringConfig('capell-exception-reports.webhook.signing_secret') !== null;
+    }
+
+    /** @return list<string> */
+    private function webhookAllowedHosts(): array
+    {
+        $hosts = config('capell-exception-reports.webhook.allowed_hosts', []);
+
+        return is_array($hosts)
+            ? array_values(array_filter(array_map(
+                static fn (mixed $host): string => is_string($host) ? strtolower(trim($host)) : '',
+                $hosts,
+            ), static fn (string $host): bool => $host !== ''))
+            : [];
     }
 
     private function recipient(): ?string
@@ -271,7 +290,7 @@ final class ExceptionReportsHealthCheck implements ChecksExtensionHealth
     private function mailViewCanRender(): bool
     {
         try {
-            (new UnhandledExceptionReported([
+            (new UnhandledExceptionReported(ExceptionReportData::from([
                 'subject' => 'Exception reported',
                 'source' => 'health-check',
                 'summary' => [
@@ -288,7 +307,7 @@ final class ExceptionReportsHealthCheck implements ChecksExtensionHealth
                 ],
                 'user' => [],
                 'trace' => '',
-            ]))->render();
+            ])))->render();
 
             return true;
         } catch (Throwable) {

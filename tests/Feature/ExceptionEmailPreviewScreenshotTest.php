@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Capell\ExceptionReports\Mail\UnhandledExceptionReported;
+use Capell\ExceptionReports\Data\ExceptionReportData;
 use Symfony\Component\Process\Process;
 
 it('keeps the committed email preview screenshot tied to the rendered mailable', function (): void {
@@ -11,7 +12,7 @@ it('keeps the committed email preview screenshot tied to the rendered mailable',
     $screenshotPath = $packagePath . '/docs/screenshots/exception-email-preview.png';
     $temporaryHtmlPath = $packagePath . '/docs/screenshots/.exception-email-preview.html';
 
-    $mail = new UnhandledExceptionReported(exceptionReportsEmailPreviewReport());
+    $mail = new UnhandledExceptionReported(ExceptionReportData::from(exceptionReportsEmailPreviewReport()));
     $html = (string) $mail->render();
 
     expect($html)

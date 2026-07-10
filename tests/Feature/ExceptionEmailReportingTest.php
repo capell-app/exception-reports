@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Capell\ExceptionReports\Actions\QueueRateLimitedExceptionDigestAction;
 use Capell\ExceptionReports\Actions\ReportExceptionByEmailAction;
 use Capell\ExceptionReports\Actions\SendExceptionReportWebhookAction;
+use Capell\ExceptionReports\Data\ExceptionReportData;
 use Capell\ExceptionReports\Mail\UnhandledExceptionReported;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Http\Client\Request as HttpClientRequest;
@@ -63,13 +64,48 @@ it('queues exception reports by email', function (): void {
     ReportExceptionByEmailAction::run(new RuntimeException('Something broke'));
 
     Mail::assertQueued(UnhandledExceptionReported::class, function (UnhandledExceptionReported $mail): bool {
-        $summary = exceptionReportsTestArrayValue($mail->report, 'summary');
-        $trace = exceptionReportsTestStringValue($mail->report, 'trace') ?? '';
+        $report = $mail->report->toArray();
+        $summary = exceptionReportsTestArrayValue($report, 'summary');
+        $trace = exceptionReportsTestStringValue($report, 'trace') ?? '';
 
         return $mail->hasTo('alerts@example.com')
             && $summary['exception'] === RuntimeException::class
             && $summary['message'] === 'Something broke'
             && str_contains($trace, __FILE__);
+    });
+});
+
+it('never serializes hostile request, runtime, secret, or identity data into queued mail', function (): void {
+    Mail::fake();
+    $_SERVER['argv'] = ['artisan', 'migrate', '--opaque-runtime-secret=runtime-secret'];
+
+    Route::get('/exception-report-queue/{opaque}', function (string $opaque): string {
+        ReportExceptionByEmailAction::run(new RuntimeException('Failure token=message-secret for alice@example.test'));
+
+        return 'reported';
+    })->name('exception-report.queue');
+
+    $this->withHeaders([
+        'Referer' => 'https://attacker.example/reset?opaque=referer-secret',
+        'User-Agent' => 'pii-browser-agent',
+        'Authorization' => 'Bearer header-secret',
+    ])->get('/exception-report-queue/route-secret?opaque-query=query-secret')->assertOk();
+
+    Mail::assertQueued(UnhandledExceptionReported::class, function (UnhandledExceptionReported $mail): bool {
+        $serialized = serialize($mail);
+        $report = $mail->report->toArray();
+
+        return $report['request']['path'] === 'exception-report-queue/{opaque}'
+            && $report['request']['route_parameters'] === []
+            && $report['user'] === null
+            && $report['trace'] === ''
+            && ! str_contains($serialized, 'route-secret')
+            && ! str_contains($serialized, 'query-secret')
+            && ! str_contains($serialized, 'referer-secret')
+            && ! str_contains($serialized, 'header-secret')
+            && ! str_contains($serialized, 'runtime-secret')
+            && ! str_contains($serialized, 'message-secret')
+            && ! str_contains($serialized, 'alice@example.test');
     });
 });
 
@@ -87,7 +123,7 @@ it('queues grouped digest emails for repeated rate limited exception signatures'
 
     Mail::assertQueued(UnhandledExceptionReported::class, 2);
     Mail::assertQueued(UnhandledExceptionReported::class, function (UnhandledExceptionReported $mail): bool {
-        $digest = exceptionReportsTestArrayValue($mail->report, 'digest');
+        $digest = exceptionReportsTestArrayValue($mail->report->toArray(), 'digest');
         $subject = $mail->envelope()->subject ?? '';
 
         return $mail->hasTo('alerts@example.com')
@@ -121,11 +157,11 @@ it('queues rate limited digest emails through a dedicated action', function (): 
         'trace' => 'trace',
     ];
 
-    QueueRateLimitedExceptionDigestAction::run($exception, 'alerts@example.com', $report);
-    QueueRateLimitedExceptionDigestAction::run($exception, 'alerts@example.com', $report);
+    QueueRateLimitedExceptionDigestAction::run($exception, 'alerts@example.com', ExceptionReportData::from($report));
+    QueueRateLimitedExceptionDigestAction::run($exception, 'alerts@example.com', ExceptionReportData::from($report));
 
     Mail::assertQueued(UnhandledExceptionReported::class, function (UnhandledExceptionReported $mail): bool {
-        $digest = exceptionReportsTestArrayValue($mail->report, 'digest');
+        $digest = exceptionReportsTestArrayValue($mail->report->toArray(), 'digest');
 
         return $mail->hasTo('alerts@example.com')
             && str_contains($mail->envelope()->subject ?? '', 'Digest: 2 repeated')
@@ -138,11 +174,13 @@ it('queues rate limited digest emails through a dedicated action', function (): 
 it('posts sanitized exception reports to an optional webhook destination', function (): void {
     Mail::fake();
     Http::fake([
-        'https://hooks.example.com/exception-reports' => Http::response(['ok' => true]),
+        'https://example.com/exception-reports' => Http::response(['ok' => true]),
     ]);
 
     config()->set('capell-exception-reports.webhook.enabled', true);
-    config()->set('capell-exception-reports.webhook.url', 'https://hooks.example.com/exception-reports');
+    config()->set('capell-exception-reports.webhook.url', 'https://example.com/exception-reports');
+    config()->set('capell-exception-reports.webhook.allowed_hosts', ['example.com']);
+    config()->set('capell-exception-reports.webhook.signing_secret', 'webhook-test-secret');
 
     ReportExceptionByEmailAction::run(new RuntimeException('Webhook failed token=secret-token'));
 
@@ -153,9 +191,11 @@ it('posts sanitized exception reports to an optional webhook destination', funct
             ? $report['summary']
             : null;
 
-        return $request->url() === 'https://hooks.example.com/exception-reports'
+        return $request->url() === 'https://example.com/exception-reports'
             && $request['event'] === 'exception.reported'
             && $request['package'] === 'capell-app/exception-reports'
+            && is_string($request->header('X-Capell-Event-Id'))
+            && str_starts_with((string) $request->header('X-Capell-Signature'), 'sha256=')
             && is_array($report)
             && is_array($summary)
             && ($summary['exception'] ?? null) === RuntimeException::class
@@ -166,12 +206,14 @@ it('posts sanitized exception reports to an optional webhook destination', funct
 
 it('delivers sanitized webhook payloads through a dedicated action', function (): void {
     Http::fake([
-        'https://hooks.example.com/exception-reports' => Http::response(['ok' => true]),
+        'https://example.com/exception-reports' => Http::response(['ok' => true]),
     ]);
+    config()->set('capell-exception-reports.webhook.allowed_hosts', ['example.com']);
+    config()->set('capell-exception-reports.webhook.signing_secret', 'webhook-test-secret');
 
     SendExceptionReportWebhookAction::run(
-        'https://hooks.example.com/exception-reports',
-        [
+        'https://example.com/exception-reports',
+        ExceptionReportData::from([
             'subject' => '[Capell] RuntimeException in webhook test',
             'source' => 'route: webhook.test',
             'summary' => [
@@ -182,7 +224,7 @@ it('delivers sanitized webhook payloads through a dedicated action', function ()
             'console' => null,
             'user' => null,
             'trace' => 'secret trace',
-        ],
+        ]),
         new RuntimeException('Webhook action failure'),
     );
 
@@ -192,7 +234,7 @@ it('delivers sanitized webhook payloads through a dedicated action', function ()
             ? $report['summary']
             : null;
 
-        return $request->url() === 'https://hooks.example.com/exception-reports'
+        return $request->url() === 'https://example.com/exception-reports'
             && $request['event'] === 'exception.reported'
             && is_array($report)
             && is_array($summary)
@@ -201,16 +243,40 @@ it('delivers sanitized webhook payloads through a dedicated action', function ()
     });
 });
 
+it('refuses unapproved or unsigned webhook destinations before sending', function (): void {
+    Http::preventStrayRequests();
+    config()->set('capell-exception-reports.webhook.allowed_hosts', []);
+    config()->set('capell-exception-reports.webhook.signing_secret', null);
+
+    SendExceptionReportWebhookAction::run(
+        'https://internal.example.test/exception-reports',
+        ExceptionReportData::from([
+            'subject' => '[Capell] RuntimeException',
+            'source' => 'route: webhook.test',
+            'summary' => ['exception' => RuntimeException::class, 'message' => 'Webhook test'],
+            'request' => [],
+            'console' => null,
+            'user' => null,
+            'trace' => '',
+        ]),
+        new RuntimeException('Webhook action failure'),
+    );
+
+    Http::assertNothingSent();
+});
+
 it('can deliver webhook reports when no email recipient is configured', function (): void {
     Mail::fake();
     Http::fake([
-        'https://hooks.example.com/exception-reports' => Http::response(['ok' => true]),
+        'https://example.com/exception-reports' => Http::response(['ok' => true]),
     ]);
 
     config()->set('capell-exception-reports.recipient', null);
     config()->set('services.exception_reports.to', null);
     config()->set('capell-exception-reports.webhook.enabled', true);
-    config()->set('capell-exception-reports.webhook.url', 'https://hooks.example.com/exception-reports');
+    config()->set('capell-exception-reports.webhook.url', 'https://example.com/exception-reports');
+    config()->set('capell-exception-reports.webhook.allowed_hosts', ['example.com']);
+    config()->set('capell-exception-reports.webhook.signing_secret', 'webhook-test-secret');
 
     ReportExceptionByEmailAction::run(new RuntimeException('Webhook only failure'));
 
@@ -300,18 +366,17 @@ it('includes request user and route context', function (): void {
         ->assertOk();
 
     Mail::assertQueued(UnhandledExceptionReported::class, function (UnhandledExceptionReported $mail): bool {
-        $request = exceptionReportsTestArrayValue($mail->report, 'request');
+        $report = $mail->report->toArray();
+        $request = exceptionReportsTestArrayValue($report, 'request');
 
-        return $mail->report['subject'] === '[Capell] RuntimeException in route: exception-report.context'
-            && $mail->envelope()->subject === $mail->report['subject']
-            && $mail->report['source'] === 'route: exception-report.context'
+        return $report['subject'] === '[Capell] RuntimeException in route: exception-report.context'
+            && $mail->envelope()->subject === $report['subject']
+            && $report['source'] === 'route: exception-report.context'
             && $request['route_name'] === 'exception-report.context'
-            && $request['route_parameters'] === ['package' => 'capell-marketplace']
-            && $request['referer'] === 'https://capell.test/dashboard'
-            && $request['browser'] === 'Mozilla/5.0 Exception Reporter Test Browser'
-            && $request['accept'] === 'text/html'
-            && $request['request_id'] === 'req_exception_report_test'
-            && $mail->report['user'] === null;
+            && $request['route_parameters'] === []
+            && ! array_key_exists('referer', $request)
+            && ! array_key_exists('browser', $request)
+            && $report['user'] === null;
     });
 });
 
@@ -330,21 +395,21 @@ it('includes console command context when reporting artisan option parsing failu
     }
 
     Mail::assertQueued(UnhandledExceptionReported::class, function (UnhandledExceptionReported $mail): bool {
-        $console = exceptionReportsTestArrayValue($mail->report, 'console');
+        $report = $mail->report->toArray();
+        $console = exceptionReportsTestArrayValue($report, 'console');
 
-        return $mail->report['source'] === 'command: migrate'
-            && $mail->report['subject'] === '[Capell] Symfony\Component\Console\Exception\InvalidOptionException in command: migrate'
+        return $report['source'] === 'command: migrate'
+            && $report['subject'] === '[Capell] Symfony\Component\Console\Exception\InvalidOptionException in command: migrate'
             && $console['command'] === 'migrate'
-            && $console['arguments'] === 'migrate --force --columns=120 --api-token=***'
-            && $console['command_line'] === 'migrate --force --columns=120 --api-token=***'
+            && count($console) === 1
             && str_contains((string) $mail->render(), 'Console')
-            && str_contains((string) $mail->render(), '--columns=120')
+            && ! str_contains((string) $mail->render(), '--columns=120')
             && ! str_contains((string) $mail->render(), 'secret-token');
     });
 });
 
 it('wraps long stack traces for email clients', function (): void {
-    $mail = new UnhandledExceptionReported([
+    $mail = new UnhandledExceptionReported(ExceptionReportData::from([
         'subject' => '[Capell] RuntimeException in route: very.long.route.name',
         'source' => 'route: very.long.route.name',
         'summary' => [
@@ -375,7 +440,7 @@ it('wraps long stack traces for email clients', function (): void {
             'email' => 'ada@example.com',
         ],
         'trace' => '#0 /very/long/path/App/Actions/Marketplace/VeryLongClassNameThatWouldNormallyOverflowEmailClients.php(123): App\\Long\\Namespaced\\ClassName->handle()',
-    ]);
+    ]));
 
     $mail->assertSeeInHtml('Stack Trace');
     $mail->assertSeeInHtml('<table', false);
@@ -390,7 +455,7 @@ it('wraps long stack traces for email clients', function (): void {
 });
 
 it('strips unsafe diagnostic content and marks the report unsafe', function (): void {
-    $mail = new UnhandledExceptionReported([
+    $mail = new UnhandledExceptionReported(ExceptionReportData::from([
         'subject' => "[Capell] <script>alert('subject')</script> bad",
         'source' => "route: broken\n<script>alert('source')</script>",
         'summary' => [
@@ -421,7 +486,7 @@ it('strips unsafe diagnostic content and marks the report unsafe', function (): 
             'email' => 'ada@example.com',
         ],
         'trace' => "#0 <script>alert('trace')</script>\n#1 App\\Safe\\Class->handle()",
-    ]);
+    ]));
 
     $mail->assertSeeInHtml('Unsafe diagnostic content was stripped');
     $mail->assertSeeInHtml('summary.message');
@@ -441,7 +506,7 @@ it('strips unsafe diagnostic content and marks the report unsafe', function (): 
 });
 
 it('redacts secrets from diagnostic email context', function (): void {
-    $mail = new UnhandledExceptionReported([
+    $mail = new UnhandledExceptionReported(ExceptionReportData::from([
         'subject' => '[Capell] RuntimeException in https://capell.test/reset?token=subject-secret',
         'source' => 'route: secret.route',
         'summary' => [
@@ -482,7 +547,7 @@ it('redacts secrets from diagnostic email context', function (): void {
             'remember_token' => 'remember-secret',
         ],
         'trace' => "Authorization: Bearer trace-secret\n#0 Client->request('https://api.example.test?api_key=trace-api-secret')",
-    ]);
+    ]));
 
     $html = (string) $mail->render();
 

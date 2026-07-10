@@ -174,6 +174,12 @@ final class ExceptionReportMailSanitizer
         ) ?? '';
 
         $value = preg_replace(
+            '/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i',
+            '[redacted-email]',
+            $value,
+        ) ?? '';
+
+        $value = preg_replace(
             '/(?<=[?&;\s])((?:api[_-]?key|access[_-]?key|private[_-]?key|password|passwd|secret|session|signature|token)=)[^&;\s]+/i',
             '$1' . self::REDACTED,
             $value,

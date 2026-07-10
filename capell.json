@@ -66,9 +66,14 @@
             "encryptedFields": [],
             "hashedTokenFields": [],
             "redactedOutputClasses": [
-                "Capell\\ExceptionReports\\Support\\ExceptionReportMailSanitizer"
+                "Capell\\ExceptionReports\\Support\\ExceptionReportMailSanitizer",
+                "Capell\\ExceptionReports\\Data\\ExceptionReportData",
+                "Capell\\ExceptionReports\\Mail\\UnhandledExceptionReported",
+                "Capell\\ExceptionReports\\Actions\\SendExceptionReportWebhookAction"
             ],
-            "plaintextJustifications": []
+            "plaintextJustifications": [
+                "Sanitized exception reports are transient queue, email, and optional webhook payloads; IP address, user identity, stack traces, and route parameters are disabled by default and require explicit configuration."
+            ]
         },
         "publicOutput": {
             "cacheSafe": false,
@@ -80,7 +85,7 @@
             "requiresTimeouts": true,
             "requiresSecretRedaction": true,
             "clients": [
-                "Capell\\ExceptionReports\\Actions\\ReportExceptionByEmailAction"
+                "Capell\\ExceptionReports\\Actions\\SendExceptionReportWebhookAction"
             ]
         },
         "adminSurface": {
@@ -117,7 +122,7 @@
     },
     "marketplace": {
         "summary": "Email and optional webhook alerting for unhandled Capell exceptions, with request, route, user, and stack-trace context sanitized for safe operator triage.",
-        "description": "Exception Reports gives operators a direct email signal when a Capell app reports an unhandled exception, plus an optional sanitized webhook payload for incident channels. Reports include the app, environment, exception class, message, request route, route parameters, current user, request identifiers, and stack trace, then strip unsafe diagnostic markup before delivery. Signature and global rate limits keep repeated failures from flooding the queue, with optional grouped digest emails for repeated suppressed signatures.",
+        "description": "Exception Reports gives operators a direct email signal when a Capell app reports an unhandled exception, plus an optional signed webhook payload for approved HTTPS incident channels. Queue payloads are sanitized before dispatch and normally contain only exception metadata plus request method, route and route template. IP address, user identity, stack traces and route parameters are opt-in. Signature and global rate limits keep repeated failures from flooding the queue, with optional grouped digest emails for repeated suppressed signatures.",
         "screenshots": [
             {
                 "path": "docs/assets/marketplace/extension-card.svg",

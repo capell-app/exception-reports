@@ -71,7 +71,9 @@ it('passes the webhook health check when webhooks are disabled', function (): vo
 
 it('passes the webhook health check when webhooks have a valid endpoint', function (): void {
     config()->set('capell-exception-reports.webhook.enabled', true);
-    config()->set('capell-exception-reports.webhook.url', 'https://hooks.example.com/exception-reports');
+    config()->set('capell-exception-reports.webhook.url', 'https://example.com/exception-reports');
+    config()->set('capell-exception-reports.webhook.allowed_hosts', ['example.com']);
+    config()->set('capell-exception-reports.webhook.signing_secret', 'health-check-signing-secret');
 
     $result = (new ExceptionReportsHealthCheck)->webhookConfigurationCheck();
 

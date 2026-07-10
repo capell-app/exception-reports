@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Capell\ExceptionReports\Mail;
 
+use Capell\ExceptionReports\Data\ExceptionReportData;
 use Capell\ExceptionReports\Support\ExceptionReportMailSanitizer;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -18,18 +19,19 @@ final class UnhandledExceptionReported extends Mailable implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
-    /**
-     * @param  array<string, mixed>  $report
-     */
-    public function __construct(public readonly array $report) {}
+    public readonly ExceptionReportData $report;
+
+    public function __construct(ExceptionReportData $report)
+    {
+        $this->report = ExceptionReportData::from(
+            resolve(ExceptionReportMailSanitizer::class)->sanitize($report->toArray()),
+        );
+    }
 
     public function envelope(): Envelope
     {
-        $safeReport = $this->safeReport();
-        $subject = $safeReport['subject'] ?? __('capell-exception-reports::mail.default_subject');
-
         return new Envelope(
-            subject: is_scalar($subject) ? (string) $subject : (string) __('capell-exception-reports::mail.default_subject'),
+            subject: $this->report->subject,
         );
     }
 
@@ -38,7 +40,7 @@ final class UnhandledExceptionReported extends Mailable implements ShouldQueue
         return new Content(
             markdown: 'capell-exception-reports::mail.reported',
             with: [
-                'safeReport' => $this->safeReport(),
+                'safeReport' => $this->report->toArray(),
             ],
         );
     }
@@ -51,11 +53,4 @@ final class UnhandledExceptionReported extends Mailable implements ShouldQueue
         return [];
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function safeReport(): array
-    {
-        return resolve(ExceptionReportMailSanitizer::class)->sanitize($this->report);
-    }
 }
