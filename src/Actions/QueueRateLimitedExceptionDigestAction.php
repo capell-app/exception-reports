@@ -23,7 +23,9 @@ final class QueueRateLimitedExceptionDigestAction
             return;
         }
 
-        $report = resolve(ExceptionReportMailSanitizer::class)->sanitize($report);
+        $report = ExceptionReportData::from(
+            resolve(ExceptionReportMailSanitizer::class)->sanitize($report->toArray()),
+        );
         $signature = $this->signature($exception);
         $windowSeconds = $this->positiveIntegerConfig('capell-exception-reports.digest.window_seconds', 60 * 60);
         $threshold = $this->positiveIntegerConfig('capell-exception-reports.digest.threshold', 5);
