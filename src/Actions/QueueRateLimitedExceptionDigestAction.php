@@ -6,6 +6,7 @@ namespace Capell\ExceptionReports\Actions;
 
 use Capell\ExceptionReports\Data\ExceptionReportData;
 use Capell\ExceptionReports\Mail\UnhandledExceptionReported;
+use Capell\ExceptionReports\Support\ExceptionReportMailSanitizer;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -22,6 +23,7 @@ final class QueueRateLimitedExceptionDigestAction
             return;
         }
 
+        $report = resolve(ExceptionReportMailSanitizer::class)->sanitize($report);
         $signature = $this->signature($exception);
         $windowSeconds = $this->positiveIntegerConfig('capell-exception-reports.digest.window_seconds', 60 * 60);
         $threshold = $this->positiveIntegerConfig('capell-exception-reports.digest.threshold', 5);
