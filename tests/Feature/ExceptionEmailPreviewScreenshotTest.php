@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Capell\ExceptionReports\Mail\UnhandledExceptionReported;
 use Capell\ExceptionReports\Data\ExceptionReportData;
+use Capell\ExceptionReports\Mail\UnhandledExceptionReported;
 use Symfony\Component\Process\Process;
 
 it('keeps the committed email preview screenshot tied to the rendered mailable', function (): void {

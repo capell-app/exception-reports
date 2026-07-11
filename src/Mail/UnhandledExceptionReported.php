@@ -52,5 +52,4 @@ final class UnhandledExceptionReported extends Mailable implements ShouldQueue
     {
         return [];
     }
-
 }
