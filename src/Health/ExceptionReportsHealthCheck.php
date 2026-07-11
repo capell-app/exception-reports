@@ -6,8 +6,8 @@ namespace Capell\ExceptionReports\Health;
 
 use Capell\Core\Contracts\Extensions\ChecksExtensionHealth;
 use Capell\Core\Data\Diagnostics\DoctorCheckResultData;
-use Capell\ExceptionReports\Mail\UnhandledExceptionReported;
 use Capell\ExceptionReports\Data\ExceptionReportData;
+use Capell\ExceptionReports\Mail\UnhandledExceptionReported;
 use Capell\ExceptionReports\Providers\ExceptionReportsServiceProvider;
 use Capell\ExceptionReports\Support\ExceptionReportMailSanitizer;
 use Illuminate\Contracts\Debug\ExceptionHandler as ExceptionHandlerContract;
