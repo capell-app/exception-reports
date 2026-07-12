@@ -2,7 +2,7 @@
 
 <!-- prettier-ignore-start -->
 
-## What This Extension Adds
+## What This Plugin Adds
 
 Exception Reports is an **Available**, **No schema impact** Capell package in the **Capell Operations** product group. It ships as `capell-app/exception-reports` and extends these surfaces: console, shared.
 
@@ -21,13 +21,17 @@ Status details:
 
 ## Why It Matters
 
-**For developers:** The package gives developers package-owned service providers, Actions, and Blade views instead of pushing this behaviour into core or application code.
+**For developers:** The package gives developers package-owned service providers, Actions, Data objects, and Blade views instead of pushing this behaviour into core or application code.
 
 **For teams:** Email and optional webhook alerting for unhandled Capell exceptions, with request, route, user, and stack-trace context sanitized for safe operator triage.
 
 ## Screens And Workflow
 
 Screenshot contract: `docs/screenshots.json`.
+
+![Exception Reports extension card](docs/screenshots/extension-card.svg)
+
+![Exception Reports rendered email preview](docs/screenshots/exception-email-preview.png)
 
 - Exception Reports extension card (marketplace, required).
 - Exception Reports rendered email preview (email, required).
@@ -36,7 +40,8 @@ Screenshot contract: `docs/screenshots.json`.
 
 - Service providers: `Capell\ExceptionReports\Providers\ExceptionReportsServiceProvider`.
 - Config files: `packages/exception-reports/config/capell-exception-reports.php`.
-- Actions: `ReportExceptionByEmailAction`.
+- Actions: `QueueRateLimitedExceptionDigestAction`, `ReportExceptionByEmailAction`, `SendExceptionReportWebhookAction`.
+- Data objects: `ExceptionReportData`, `ResolvedExceptionReportWebhookEndpointData`.
 - Manifest contributions: `health-check: Capell\ExceptionReports\Health\ExceptionReportsHealthCheck`.
 - Health checks: `Capell\ExceptionReports\Health\ExceptionReportsHealthCheck`.
 - Blade views: `packages/exception-reports/resources/views/mail/reported.blade.php`.
