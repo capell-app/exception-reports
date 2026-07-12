@@ -145,7 +145,7 @@ it('declares extension metadata and runtime provider', function (): void {
         ->toMatchArray([
             'name' => 'capell-app/exception-reports',
             'kind' => 'package',
-            'capellApiVersion' => '^0.0',
+            'capellApiVersion' => '^4.0',
             'product' => [
                 'group' => 'Capell Operations',
                 'tier' => 'free',
