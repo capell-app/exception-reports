@@ -4,7 +4,7 @@
     "slug": "exception-reports",
     "displayName": "Exception Reports",
     "kind": "package",
-    "capellApiVersion": "^4.0",
+    "capellApiVersion": "^1.0",
     "version": "1.x-dev",
     "description": "Exception Reports emails operators when Capell reports an unhandled exception, including sanitized app, request, route, user, and stack-trace context that is safe to read in an email client.",
     "product": {
