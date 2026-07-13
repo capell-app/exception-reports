@@ -10,7 +10,6 @@ use Capell\ExceptionReports\Support\ExceptionReportMailSanitizer;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
@@ -59,9 +58,6 @@ final class ReportExceptionByEmailAction
         }
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     private function safeReport(Throwable $exception, ?Request $request): ExceptionReportData
     {
         $route = $request?->route();
@@ -127,6 +123,10 @@ final class ReportExceptionByEmailAction
             return 'action: ' . $route->getActionName();
         }
 
+        if ($route instanceof Route) {
+            return 'route: ' . $route->uri();
+        }
+
         if ($request instanceof Request && $request->path() !== '/') {
             return 'path: ' . $request->path();
         }
@@ -184,30 +184,24 @@ final class ReportExceptionByEmailAction
 
     private function canReport(Throwable $exception): bool
     {
+        if (! (bool) config('capell-exception-reports.rate_limits.enabled', true)) {
+            return true;
+        }
+
         $signatureKey = 'exception-report-email:signature:' . $this->signature($exception);
         $globalKey = 'exception-report-email:global';
 
         $signatureAttempts = $this->positiveIntegerConfig('capell-exception-reports.rate_limits.signature_attempts', 1);
         $globalAttempts = $this->positiveIntegerConfig('capell-exception-reports.rate_limits.global_attempts', 10);
 
-        $lock = Cache::lock('exception-report-email:rate-limit-lock', 5);
-
-        if (! $lock->get()) {
+        if (RateLimiter::tooManyAttempts($signatureKey, $signatureAttempts) || RateLimiter::tooManyAttempts($globalKey, $globalAttempts)) {
             return false;
         }
 
-        try {
-            if (RateLimiter::tooManyAttempts($signatureKey, $signatureAttempts) || RateLimiter::tooManyAttempts($globalKey, $globalAttempts)) {
-                return false;
-            }
+        RateLimiter::hit($signatureKey, $this->positiveIntegerConfig('capell-exception-reports.rate_limits.signature_decay_seconds', 60 * 15));
+        RateLimiter::hit($globalKey, $this->positiveIntegerConfig('capell-exception-reports.rate_limits.global_decay_seconds', 60 * 60));
 
-            RateLimiter::hit($signatureKey, $this->positiveIntegerConfig('capell-exception-reports.rate_limits.signature_decay_seconds', 60 * 15));
-            RateLimiter::hit($globalKey, $this->positiveIntegerConfig('capell-exception-reports.rate_limits.global_decay_seconds', 60 * 60));
-
-            return true;
-        } finally {
-            $lock->release();
-        }
+        return true;
     }
 
     private function signature(Throwable $exception): string
@@ -348,66 +342,6 @@ final class ReportExceptionByEmailAction
         }
 
         return array_values(array_filter($argv, is_string(...)));
-    }
-
-    /**
-     * @param  array<int, string>  $argv
-     * @return array<int, string>
-     */
-    private function consoleArguments(array $argv): array
-    {
-        return array_map($this->maskConsoleArgument(...), array_slice($argv, 1));
-    }
-
-    /**
-     * @param  array<int, string>  $argv
-     */
-    private function consoleCommandLine(array $argv): string
-    {
-        return Str::limit(implode(' ', array_map($this->quoteConsoleArgument(...), $this->consoleArguments($argv))), 1000, '...');
-    }
-
-    private function maskConsoleArgument(string $argument): string
-    {
-        if (! str_contains($argument, '=')) {
-            return $this->isSensitiveArgumentName($argument) ? $argument . '=***' : $argument;
-        }
-
-        [$name] = explode('=', $argument, 2);
-
-        if (! $this->isSensitiveArgumentName($name)) {
-            return $argument;
-        }
-
-        return $name . '=***';
-    }
-
-    private function isSensitiveArgumentName(string $argument): bool
-    {
-        $normalized = Str::of($argument)
-            ->lower()
-            ->trim('-')
-            ->replace(['_', '-'], '')
-            ->toString();
-
-        return Str::contains($normalized, [
-            'password',
-            'passwd',
-            'secret',
-            'token',
-            'apikey',
-            'accesskey',
-            'privatekey',
-        ]);
-    }
-
-    private function quoteConsoleArgument(string $argument): string
-    {
-        if ($argument === '' || preg_match('/\s/', $argument) === 1) {
-            return escapeshellarg($argument);
-        }
-
-        return $argument;
     }
 
     private function logReporterFailure(Throwable $reporterFailure, Throwable $originalException): void

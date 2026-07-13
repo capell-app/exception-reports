@@ -31,22 +31,12 @@ final class QueueRateLimitedExceptionDigestAction
         $threshold = $this->positiveIntegerConfig('capell-exception-reports.digest.threshold', 5);
         $cacheKey = 'exception-report-email:digest:' . $signature;
 
-        $lock = Cache::lock($cacheKey . ':lock', 5);
-
-        if (! $lock->get()) {
-            return;
+        if (! Cache::has($cacheKey)) {
+            Cache::put($cacheKey, 0, $windowSeconds);
         }
 
-        try {
-            if (! Cache::has($cacheKey)) {
-                Cache::put($cacheKey, 0, $windowSeconds);
-            }
-
-            $count = Cache::increment($cacheKey);
-            $count = is_int($count) ? $count : (int) $count;
-        } finally {
-            $lock->release();
-        }
+        $count = Cache::increment($cacheKey);
+        $count = is_int($count) ? $count : (int) $count;
 
         if ($count % $threshold !== 0) {
             return;

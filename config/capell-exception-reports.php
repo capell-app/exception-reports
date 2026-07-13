@@ -15,6 +15,7 @@ return [
     ],
 
     'rate_limits' => [
+        'enabled' => filter_var(env('CAPELL_EXCEPTION_REPORTS_RATE_LIMITS_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
         'signature_attempts' => (int) env('CAPELL_EXCEPTION_REPORTS_SIGNATURE_ATTEMPTS', 1),
         'signature_decay_seconds' => (int) env('CAPELL_EXCEPTION_REPORTS_SIGNATURE_DECAY_SECONDS', 60 * 15),
         'global_attempts' => (int) env('CAPELL_EXCEPTION_REPORTS_GLOBAL_ATTEMPTS', 10),

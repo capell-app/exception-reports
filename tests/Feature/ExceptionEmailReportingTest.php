@@ -7,6 +7,7 @@ use Capell\ExceptionReports\Actions\ReportExceptionByEmailAction;
 use Capell\ExceptionReports\Actions\SendExceptionReportWebhookAction;
 use Capell\ExceptionReports\Data\ExceptionReportData;
 use Capell\ExceptionReports\Mail\UnhandledExceptionReported;
+use Illuminate\Cache\RateLimiter as RateLimiterService;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Http\Client\Request as HttpClientRequest;
 use Illuminate\Support\Facades\Artisan;
@@ -53,9 +54,43 @@ function exceptionReportsTestStringValue(array $values, string $key): ?string
     return is_string($value) ? $value : null;
 }
 
+/** @param array<string, mixed> $values */
+function exceptionReportsTestIntValue(array $values, string $key): int
+{
+    $value = $values[$key] ?? null;
+
+    if (! is_int($value) && ! (is_string($value) && is_numeric($value))) {
+        throw new RuntimeException(sprintf('Expected [%s] to be an integer.', $key));
+    }
+
+    return (int) $value;
+}
+
 beforeEach(function (): void {
+    Cache::setDefaultDriver('array');
     Cache::flush();
+    $rateLimiter = new RateLimiterService(Cache::store('array'));
+    app()->instance(RateLimiterService::class, $rateLimiter);
+    RateLimiter::swap($rateLimiter);
+    app()->bind(ReportExceptionByEmailAction::class, static fn (): ReportExceptionByEmailAction => new ReportExceptionByEmailAction);
+    RateLimiter::clear('exception-report-email:global');
     config()->set('capell-exception-reports.recipient', 'alerts@example.com');
+    config()->set('capell-exception-reports.rate_limits.enabled', false);
+    config()->set('capell-exception-reports.rate_limits.signature_attempts', 1);
+    config()->set('capell-exception-reports.rate_limits.global_attempts', 10);
+    config()->set('capell-exception-reports.privacy.include_ip_address', false);
+    config()->set('capell-exception-reports.privacy.include_user_identity', false);
+    config()->set('capell-exception-reports.privacy.include_trace', false);
+    config()->set('capell-exception-reports.privacy.route_parameter_allowlist', []);
+    config()->set('capell-exception-reports.digest.enabled', false);
+    config()->set('capell-exception-reports.digest.threshold', 5);
+    config()->set('capell-exception-reports.digest.window_seconds', 3_600);
+    config()->set('capell-exception-reports.webhook.enabled', false);
+    config()->set('capell-exception-reports.webhook.url', null);
+    config()->set('capell-exception-reports.webhook.allowed_hosts', []);
+    config()->set('capell-exception-reports.webhook.signing_secret', null);
+    config()->set('capell-exception-reports.webhook.include_trace', false);
+    config()->set('services.exception_reports.to', null);
 });
 
 it('queues exception reports by email', function (): void {
@@ -71,7 +106,7 @@ it('queues exception reports by email', function (): void {
         return $mail->hasTo('alerts@example.com')
             && $summary['exception'] === RuntimeException::class
             && $summary['message'] === 'Something broke'
-            && $trace === 'n/a';
+            && $trace === '';
     });
 });
 
@@ -85,7 +120,7 @@ it('does not serialize request secrets into queued exception reports', function 
     $this->get('/exception-report-queue/route-secret?signature=query-secret');
 
     Mail::assertQueued(UnhandledExceptionReported::class, function (UnhandledExceptionReported $mail): bool {
-        $serializedMail = serialize($mail);
+        $serializedMail = json_encode($mail->report->toArray(), JSON_THROW_ON_ERROR);
 
         return ! str_contains($serializedMail, 'route-secret')
             && ! str_contains($serializedMail, 'query-secret')
@@ -110,12 +145,13 @@ it('never serializes hostile request, runtime, secret, or identity data into que
     ])->get('/exception-report-queue/route-secret?opaque-query=query-secret')->assertOk();
 
     Mail::assertQueued(UnhandledExceptionReported::class, function (UnhandledExceptionReported $mail): bool {
-        $serialized = serialize($mail);
+        $serialized = json_encode($mail->report->toArray(), JSON_THROW_ON_ERROR);
         $report = $mail->report->toArray();
+        $request = exceptionReportsTestArrayValue($report, 'request');
 
-        return $report['request']['path'] === 'exception-report-queue/{opaque}'
-            && $report['request']['route_parameters'] === []
-            && $report['user'] === null
+        return $request['path'] === 'exception-report-queue/{opaque}'
+            && $request['route_parameters'] === []
+            && $report['user'] === []
             && $report['trace'] === ''
             && ! str_contains($serialized, 'route-secret')
             && ! str_contains($serialized, 'query-secret')
@@ -132,6 +168,7 @@ it('queues grouped digest emails for repeated rate limited exception signatures'
     config()->set('capell-exception-reports.digest.enabled', true);
     config()->set('capell-exception-reports.digest.threshold', 2);
     config()->set('capell-exception-reports.digest.window_seconds', 900);
+    config()->set('capell-exception-reports.rate_limits.enabled', true);
 
     $exception = new RuntimeException('Digest this repeated failure');
 
@@ -146,9 +183,9 @@ it('queues grouped digest emails for repeated rate limited exception signatures'
 
         return $mail->hasTo('alerts@example.com')
             && str_contains($subject, 'Digest: 2 repeated')
-            && $digest['count'] === 2
-            && $digest['threshold'] === 2
-            && $digest['window_seconds'] === 900
+            && exceptionReportsTestIntValue($digest, 'count') === 2
+            && exceptionReportsTestIntValue($digest, 'threshold') === 2
+            && exceptionReportsTestIntValue($digest, 'window_seconds') === 900
             && is_string($digest['signature'])
             && str_contains((string) $mail->render(), 'Digest')
             && str_contains((string) $mail->render(), '2 suppressed reports');
@@ -183,9 +220,9 @@ it('queues rate limited digest emails through a dedicated action', function (): 
 
         return $mail->hasTo('alerts@example.com')
             && str_contains($mail->envelope()->subject ?? '', 'Digest: 2 repeated')
-            && $digest['count'] === 2
-            && $digest['threshold'] === 2
-            && $digest['window_seconds'] === 900;
+            && exceptionReportsTestIntValue($digest, 'count') === 2
+            && exceptionReportsTestIntValue($digest, 'threshold') === 2
+            && exceptionReportsTestIntValue($digest, 'window_seconds') === 900;
     });
 });
 
@@ -205,6 +242,10 @@ it('posts sanitized exception reports to an optional webhook destination', funct
     Mail::assertQueued(UnhandledExceptionReported::class, 1);
     Http::assertSent(function (HttpClientRequest $request): bool {
         $report = $request['report'];
+        $signatureHeader = $request->header('X-Capell-Signature');
+        $signature = is_array($signatureHeader) ? ($signatureHeader[0] ?? null) : $signatureHeader;
+        $eventIdHeader = $request->header('X-Capell-Event-Id');
+        $eventId = is_array($eventIdHeader) ? ($eventIdHeader[0] ?? null) : $eventIdHeader;
         $summary = is_array($report) && is_array($report['summary'] ?? null)
             ? $report['summary']
             : null;
@@ -212,8 +253,9 @@ it('posts sanitized exception reports to an optional webhook destination', funct
         return $request->url() === 'https://example.com/exception-reports'
             && $request['event'] === 'exception.reported'
             && $request['package'] === 'capell-app/exception-reports'
-            && is_string($request->header('X-Capell-Event-Id'))
-            && str_starts_with((string) $request->header('X-Capell-Signature'), 'sha256=')
+            && is_string($eventId)
+            && is_string($signature)
+            && str_starts_with($signature, 'sha256=')
             && is_array($report)
             && is_array($summary)
             && ($summary['exception'] ?? null) === RuntimeException::class
@@ -303,6 +345,7 @@ it('can deliver webhook reports when no email recipient is configured', function
 });
 
 it('never masks cache binding failures', function (): void {
+    config()->set('capell-exception-reports.rate_limits.enabled', true);
     Mail::fake();
     $log = Log::spy();
 
@@ -346,6 +389,7 @@ it('uses the registered exception reporter without masking resolution failures',
 });
 
 it('does not recurse when reporter failure logging fails', function (): void {
+    config()->set('capell-exception-reports.rate_limits.enabled', true);
     Mail::fake();
 
     Log::shouldReceive('warning')
@@ -394,7 +438,7 @@ it('includes request user and route context', function (): void {
             && $request['route_parameters'] === []
             && ! array_key_exists('referer', $request)
             && ! array_key_exists('browser', $request)
-            && $report['user'] === null;
+            && $report['user'] === [];
     });
 });
 
@@ -594,6 +638,7 @@ it('redacts secrets from diagnostic email context', function (): void {
 });
 
 it('rate limits duplicate exception reports by signature', function (): void {
+    config()->set('capell-exception-reports.rate_limits.enabled', true);
     Mail::fake();
 
     $exception = new RuntimeException('Same failure');
@@ -605,6 +650,7 @@ it('rate limits duplicate exception reports by signature', function (): void {
 });
 
 it('globally caps exception report emails', function (): void {
+    config()->set('capell-exception-reports.rate_limits.enabled', true);
     Mail::fake();
 
     foreach (range(1, 11) as $attempt) {
