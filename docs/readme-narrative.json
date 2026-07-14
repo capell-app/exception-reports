@@ -1,0 +1,40 @@
+{
+    "whatThisPluginAdds": {
+        "text": "Exception Reports queues sanitized unhandled-exception reports to configured email recipients and optional signed webhook endpoints, with rate limiting and grouped digests.",
+        "evidence": [
+            "capell.json",
+            "config/capell-exception-reports.php",
+            "src/Actions/ReportExceptionByEmailAction.php",
+            "src/Actions/SendExceptionReportWebhookAction.php"
+        ]
+    },
+    "surfaceOutcome": {
+        "text": "Operators receive a sanitized email or webhook payload for triage. The package has no admin resource; recipients, privacy options, and delivery behavior are configured at application level.",
+        "evidence": [
+            "capell.json",
+            "config/capell-exception-reports.php",
+            "docs/screenshots.json",
+            "src/Mail/UnhandledExceptionReported.php"
+        ]
+    },
+    "whyItMatters": {
+        "developers": {
+            "text": "A typed report boundary and sanitizer keep request secrets out of queued payloads, while trace, identity, IP, and route-parameter details remain opt-in.",
+            "evidence": [
+                "src/Data/ExceptionReportData.php",
+                "src/Support/ExceptionReportMailSanitizer.php",
+                "config/capell-exception-reports.php",
+                "tests/Feature/ExceptionEmailReportingTest.php"
+            ]
+        },
+        "teams": {
+            "text": "Operational failures reach the configured owner with enough context to start triage, and repeated signatures can be rate limited or summarized instead of producing duplicate alerts.",
+            "evidence": [
+                "src/Actions/QueueRateLimitedExceptionDigestAction.php",
+                "src/Providers/ExceptionReportsServiceProvider.php",
+                "tests/Feature/ExceptionEmailReportingTest.php",
+                "tests/Feature/Health/ExceptionReportsHealthCheckTest.php"
+            ]
+        }
+    }
+}

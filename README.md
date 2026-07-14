@@ -6,9 +6,11 @@
 
 Exception Reports is an **Available**, **No schema impact** Capell package in the **Capell Operations** product group. It ships as `capell-app/exception-reports` and extends these surfaces: console, shared.
 
-Exception Reports emails operators when Capell reports an unhandled exception, including sanitized app, request, route, user, and stack-trace context that is safe to read in an email client.
+Exception Reports queues sanitized unhandled-exception reports to configured email recipients and optional signed webhook endpoints, with rate limiting and grouped digests.
 
-After install, the package is operated through console commands or background maintenance hooks.
+Operators receive a sanitized email or webhook payload for triage. The package has no admin resource; recipients, privacy options, and delivery behavior are configured at application level.
+
+Evidence: [`capell.json`](capell.json), [`config/capell-exception-reports.php`](config/capell-exception-reports.php), [`src/Actions/ReportExceptionByEmailAction.php`](src/Actions/ReportExceptionByEmailAction.php), [`src/Actions/SendExceptionReportWebhookAction.php`](src/Actions/SendExceptionReportWebhookAction.php), [`docs/screenshots.json`](docs/screenshots.json), [`src/Mail/UnhandledExceptionReported.php`](src/Mail/UnhandledExceptionReported.php).
 
 Status details:
 
@@ -21,9 +23,11 @@ Status details:
 
 ## Why It Matters
 
-**For developers:** The package gives developers package-owned service providers, Actions, Data objects, and Blade views instead of pushing this behaviour into core or application code.
+**For developers:** A typed report boundary and sanitizer keep request secrets out of queued payloads, while trace, identity, IP, and route-parameter details remain opt-in.
 
-**For teams:** Email and optional webhook alerting for unhandled Capell exceptions, with request, route, user, and stack-trace context sanitized for safe operator triage.
+**For teams:** Operational failures reach the configured owner with enough context to start triage, and repeated signatures can be rate limited or summarized instead of producing duplicate alerts.
+
+Evidence: [`src/Data/ExceptionReportData.php`](src/Data/ExceptionReportData.php), [`src/Support/ExceptionReportMailSanitizer.php`](src/Support/ExceptionReportMailSanitizer.php), [`config/capell-exception-reports.php`](config/capell-exception-reports.php), [`tests/Feature/ExceptionEmailReportingTest.php`](tests/Feature/ExceptionEmailReportingTest.php), [`src/Actions/QueueRateLimitedExceptionDigestAction.php`](src/Actions/QueueRateLimitedExceptionDigestAction.php), [`src/Providers/ExceptionReportsServiceProvider.php`](src/Providers/ExceptionReportsServiceProvider.php), [`tests/Feature/Health/ExceptionReportsHealthCheckTest.php`](tests/Feature/Health/ExceptionReportsHealthCheckTest.php).
 
 ## Screens And Workflow
 
@@ -42,31 +46,33 @@ Screenshot contract: `docs/screenshots.json`.
 - Config files: `packages/exception-reports/config/capell-exception-reports.php`.
 - Actions: `QueueRateLimitedExceptionDigestAction`, `ReportExceptionByEmailAction`, `SendExceptionReportWebhookAction`.
 - Data objects: `ExceptionReportData`, `ResolvedExceptionReportWebhookEndpointData`.
+- Manifest action API: `reportExceptionByEmail: Capell\ExceptionReports\Actions\ReportExceptionByEmailAction`.
 - Manifest contributions: `health-check: Capell\ExceptionReports\Health\ExceptionReportsHealthCheck`.
 - Health checks: `Capell\ExceptionReports\Health\ExceptionReportsHealthCheck`.
 - Blade views: `packages/exception-reports/resources/views/mail/reported.blade.php`.
 
 ## Data Model
 
-This package has no schema impact. It does not declare package-owned migrations or required tables.
-
-Docs gap: document extension points here if the package delegates persistence to a host package.
+This package has no schema impact. It extends Capell through `health-check` contributions instead of declaring package-owned tables.
 
 ## Install Impact
 
-- Admin navigation: no admin surface declared.
+- Required packages: `capell-app/core`.
+- Admin navigation: no admin page or resource contribution is declared.
+- Admin/editor extensions: none declared.
 - Permissions: none declared in `capell.json`.
-- Public routes: none detected in package route files.
+- Public routes: none declared.
 - Database changes: no package migrations declared.
+- Config: `config/capell-exception-reports.php`.
 - Settings: no package settings declared.
-- Queues or schedules: none detected in standard package paths.
+- Queues or schedules: none declared.
 - Cache tags: none declared.
 - Commands: none declared.
 
 ## Common Pitfalls
 
-- Run package commands from the host app; in this repository use `vendor/bin/pest` for package tests.
-- Keep `composer.json`, `composer.local.json`, `capell.json`, docs, screenshots, and tests aligned when the package surface changes.
+- Keep required Capell packages on compatible v4 releases: `capell-app/core`.
+- Review package configuration before production-like verification: `config/capell-exception-reports.php`.
 
 ## Troubleshooting
 
@@ -77,13 +83,16 @@ Docs gap: document extension points here if the package delegates persistence to
 ## Quick Start
 
 1. Install the package: `composer require capell-app/exception-reports`.
-2. Run the required setup: no package migrations are declared; clear cached config and routes if the host app uses caches.
-3. Verify the package provider is registered and the related frontend, command, or extension point is active.
+2. Review `config/capell-exception-reports.php` before enabling the package.
+3. Open the package detail or install-intent surface and confirm the Exception Reports extension card is present.
 
 ## Next Steps
 
 - [Package docs](docs/README.md)
 - [Overview](docs/overview.md)
+- [Admin guide](docs/admin-guide.md)
+- Configuration files: [`config/capell-exception-reports.php`](config/capell-exception-reports.php).
+- [Troubleshooting](#troubleshooting)
 - [Screenshot contract](docs/screenshots.json)
 - [Marketplace assets](docs/assets/marketplace/)
 - [Capell content language plan](../../docs/CONTENT_LANGUAGE_PLAN.md)
