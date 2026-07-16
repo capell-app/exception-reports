@@ -14,12 +14,14 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Lorisleiva\Actions\Concerns\AsFake;
 use Lorisleiva\Actions\Concerns\AsObject;
 use Stringable;
 use Throwable;
 
 final class ReportExceptionByEmailAction
 {
+    use AsFake;
     use AsObject;
 
     public function handle(Throwable $exception): void

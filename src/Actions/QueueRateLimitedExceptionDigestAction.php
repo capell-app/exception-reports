@@ -10,11 +10,13 @@ use Capell\ExceptionReports\Support\ExceptionReportMailSanitizer;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Lorisleiva\Actions\Concerns\AsFake;
 use Lorisleiva\Actions\Concerns\AsObject;
 use Throwable;
 
 final class QueueRateLimitedExceptionDigestAction
 {
+    use AsFake;
     use AsObject;
 
     public function handle(Throwable $exception, string $recipient, ExceptionReportData $report): void

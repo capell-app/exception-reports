@@ -1,68 +1,70 @@
 # Using Exception Reports
 
-This guide is for owners and operators who decide how technical errors are routed and who needs to hear about them. Exception Reports quietly records the errors your site runs into and sends a report where you choose, so problems do not go unnoticed. Most of the time there is nothing to do; your job is to make sure the right person is told and to pass the detail to a developer. No technical knowledge needed. Every step uses the labels you see on screen.
+This guide is for the developer or operator who configures exception delivery for a Capell host application. Exception Reports registers a Laravel exception reporter, queues a sanitized email, and can optionally send a signed webhook payload. It does not create an admin inbox, settings screen, or stored error history.
 
-## Using Exception Reports (how-to)
+## Configuring Exception Reports
 
-### How to see when errors were reported
+### How to configure email delivery
 
-1. Open **Exception Reports** in the admin.
-2. Each entry is one error the site ran into, with **Reported at** showing when it happened.
-3. Scan the list to see whether errors are rare one-offs or a recurring pattern.
+1. Publish or review `config/capell-exception-reports.php` in the host application.
+2. Set `EXCEPTION_REPORT_RECIPIENT` to the monitored mailbox. The package falls back to `MAIL_FROM_ADDRESS` when it is not set.
+3. Keep `CAPELL_EXCEPTION_REPORTS_ENABLED=true` to register delivery. Set it to `false` when you need to disable reporting without removing the package.
+4. Confirm that the application's mail queue is operating: reports are queued rather than sent inline with the failing request.
 
-### How to read an error report
+### How to configure an incident webhook
 
-1. Open the report from email or from the admin.
-2. The report shows the context a developer needs: the **Message**, the **Location**, the **Environment**, the **Request** details (such as the **URL**, **Method**, and **Route**), and a **Stack Trace**.
-3. Unsafe diagnostic content is stripped out before the report is sent, so you can pass it on without exposing sensitive markup. If anything was removed you will see a note that unsafe content was stripped.
-4. You do not need to understand every field. The detail is for whoever fixes the error.
+1. Set `CAPELL_EXCEPTION_REPORTS_WEBHOOK_ENABLED=true`.
+2. Set an HTTPS `CAPELL_EXCEPTION_REPORTS_WEBHOOK_URL`, then add its public hostname to `CAPELL_EXCEPTION_REPORTS_WEBHOOK_ALLOWED_HOSTS`.
+3. Set `CAPELL_EXCEPTION_REPORTS_WEBHOOK_SIGNING_SECRET` and verify the receiving service validates the `X-Capell-Event-Id`, `X-Capell-Timestamp`, and `X-Capell-Signature` headers.
+4. Keep webhook trace inclusion off unless the incident channel has an approved need for it.
 
-### How to choose who is notified
+### How to choose diagnostic detail
 
-1. Open the notification settings for Exception Reports.
-2. Set the **recipient** so reports reach the right person or inbox.
-3. If your team uses a webhook (for example to post into a chat tool), set that destination as well.
-4. Save. New reports now go to that destination automatically.
+1. Leave IP address, user identity, stack traces, and route parameters disabled unless they are necessary for triage.
+2. Enable only the relevant `CAPELL_EXCEPTION_REPORTS_INCLUDE_*` variables.
+3. If route parameters are needed, set `CAPELL_EXCEPTION_REPORTS_ROUTE_PARAMETER_ALLOWLIST` to the exact parameter names; other route parameters stay out of the report.
+4. The sanitizer strips unsafe markup and redacts secret-like values, authorization values, cookies, tokens, and email addresses before delivery. This is a safety boundary, not permission to include unnecessary context.
 
-### How to share a report with your developer
+### How to triage a report
 
-1. Open the report.
-2. Forward the report email, or copy the recorded detail, to your developer.
-3. The content is technical and is meant for them. Your role is to make sure it reaches someone who can act on it, not to fix it yourself.
+1. Open the delivered email or incident-channel payload; there is no report record inside Capell admin.
+2. Start with the exception class, message, source, environment, request method, route, and timestamp.
+3. Forward the sanitized delivery to the developer who owns the affected route or command. If trace collection is disabled, use your normal application logs for deeper investigation.
 
 ### How to handle a flood of notifications
 
-1. If the same error keeps firing, repeated reports are grouped so you are not flooded. A grouped report shows a **Digest** summarising how many matching reports happened in the window.
-2. If you are still getting too many notifications, ask your developer to adjust the rate limit or the digest threshold.
+1. Keep signature and global rate limits enabled. Their attempts and decay windows are configured through `CAPELL_EXCEPTION_REPORTS_SIGNATURE_*` and `CAPELL_EXCEPTION_REPORTS_GLOBAL_*` variables.
+2. Enable `CAPELL_EXCEPTION_REPORTS_DIGEST_ENABLED=true` to queue grouped email digests for suppressed repeated exception signatures.
+3. Set the digest threshold and window to match the urgency of your application, then test the change in a safe environment.
 
 ## Rolling out Exception Reports (for owners)
 
 ### Turn on first
 
-- **A recipient for reports.** Set who is notified before you rely on the package, so the first real error reaches a person instead of nowhere.
+- **A monitored recipient and working queue.** Configure both before you rely on the package, so a real error reaches a person rather than a silent queue failure.
 
 ### Add when needed
 
 | Need                                     | What to use                                              |
 | ---------------------------------------- | -------------------------------------------------------- |
-| Make sure errors reach a person          | Set the **recipient** in the notification settings       |
-| Post errors into a chat or other tool    | A webhook destination (ask your developer to wire it up) |
-| Avoid being flooded by a repeating error | Grouped reports and the **Digest** summary               |
-| Pass full technical detail on            | Forward the report to a developer                        |
+| Make sure errors reach a person | Set `EXCEPTION_REPORT_RECIPIENT` and verify the mail queue |
+| Post errors into a chat or other tool | Configure the signed HTTPS webhook and its host allow-list |
+| Avoid being flooded by a repeating error | Configure rate limits and enable the optional email digest |
+| Investigate a detailed failure | Use the delivered report with normal application logs |
 
 ### Who does what
 
 | Role       | What they do                                                              |
 | ---------- | ------------------------------------------------------------------------- |
-| Site owner | Set the **recipient**, watch for recurring errors, forward to a developer |
-| Developer  | Reads the **Stack Trace** and request detail, and fixes the cause         |
+| Operator | Configures the recipient, webhook, privacy, and rate-limit values in the host application |
+| Developer | Reads the delivered report and application logs, then fixes the cause |
 
 ## Troubleshooting
 
 | What you see                           | What it means                                       | What to do                                                      |
 | -------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------- |
-| A new error is reported                | The site hit a problem it could not handle          | Forward the report to your developer; the detail is for them    |
-| The same error keeps recurring         | One underlying issue is firing repeatedly           | Flag the pattern to your developer as a priority                |
-| No one seems to be getting the reports | No recipient is set, or the wrong one is            | Set the **recipient** in the notification settings              |
-| You get too many notifications         | A noisy error is firing often                       | Ask your developer to adjust the rate limit or digest threshold |
-| A report notes content was stripped    | Unsafe diagnostic markup was removed before sending | This is expected and safe; pass the report on as normal         |
+| No report arrives | Reporting is disabled, no recipient is configured, or the mail queue is not running | Check `CAPELL_EXCEPTION_REPORTS_ENABLED`, `EXCEPTION_REPORT_RECIPIENT`, and the host queue worker |
+| The webhook receives nothing | Webhook delivery is disabled or its HTTPS/allow-list/signing configuration is invalid | Check the webhook environment variables and application logs; webhook failures never replace the original exception |
+| You get too many emails | A noisy error is firing often | Adjust signature/global rate limits or enable the digest in application configuration |
+| A report has less context than expected | The relevant privacy option is off by default | Enable only the necessary opt-in context, preferably in a safe environment first |
+| A report contains `[redacted]` | The sanitizer removed a secret-like value or personal data | This is expected; use controlled application logs if deeper diagnostics are needed |

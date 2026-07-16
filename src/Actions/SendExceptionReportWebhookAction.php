@@ -11,11 +11,13 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use Lorisleiva\Actions\Concerns\AsFake;
 use Lorisleiva\Actions\Concerns\AsObject;
 use Throwable;
 
 final class SendExceptionReportWebhookAction
 {
+    use AsFake;
     use AsObject;
 
     public function handle(string $url, ExceptionReportData $report, Throwable $exception): void

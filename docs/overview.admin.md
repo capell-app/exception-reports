@@ -1,24 +1,25 @@
 ## What it does for you
 
-Exception Reports collects the technical errors your site runs into and sends them where you choose, so problems don't go unnoticed. As an owner you mostly decide who is notified and pass reports to your developer.
+Exception Reports registers with Laravel's exception handler and queues a sanitized email when an unhandled exception is reported. It can also, when explicitly enabled, send a signed payload to an approved HTTPS webhook endpoint. It does not store reports or add an admin inbox.
 
 ## Your screens
 
-- **Exception reports**: the errors that have been recorded.
-- **Notification settings**: who gets told, and how (email or webhook).
+- **Your email or incident channel**: where the package delivers the sanitized report.
+- **Application configuration**: where a developer sets the recipient, privacy controls, rate limits, digest, and optional webhook.
 
 ## What you can do
 
-- See when errors were reported.
-- Choose who is notified.
-- Share a report with your developer.
+- Choose the email recipient through application configuration.
+- Opt into selected request details, such as trace, IP address, user identity, or allow-listed route parameters.
+- Configure rate limits and an optional grouped digest to reduce repeated email alerts.
+- Enable an approved, signed HTTPS webhook for an incident channel.
 
 ## Where to find it
 
-Errors are collected under **Exception Reports** in the admin.
+There is no Exception Reports admin page. A developer configures `config/capell-exception-reports.php` and the corresponding environment variables in the host application.
 
 ## Good to know
 
-- Errors are collected here so they are not missed.
-- Set a recipient so the right person hears about problems.
-- Share the report with your developer; the detail is technical and for them.
+- Reports are delivery notifications, not a historical error log. Keep a separate monitoring or logging system if you need a searchable incident history.
+- Sensitive values are redacted and unsafe markup is stripped before queued delivery. Trace, IP address, user identity, and route parameters are off by default.
+- Webhooks require an HTTPS URL, an allow-listed public host, and a signing secret; failures in reporting are logged without replacing the original application error.
