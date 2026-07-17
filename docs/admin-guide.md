@@ -45,26 +45,26 @@ This guide is for the developer or operator who configures exception delivery fo
 
 ### Add when needed
 
-| Need                                     | What to use                                              |
-| ---------------------------------------- | -------------------------------------------------------- |
-| Make sure errors reach a person | Set `EXCEPTION_REPORT_RECIPIENT` and verify the mail queue |
-| Post errors into a chat or other tool | Configure the signed HTTPS webhook and its host allow-list |
+| Need                                     | What to use                                                |
+| ---------------------------------------- | ---------------------------------------------------------- |
+| Make sure errors reach a person          | Set `EXCEPTION_REPORT_RECIPIENT` and verify the mail queue |
+| Post errors into a chat or other tool    | Configure the signed HTTPS webhook and its host allow-list |
 | Avoid being flooded by a repeating error | Configure rate limits and enable the optional email digest |
-| Investigate a detailed failure | Use the delivered report with normal application logs |
+| Investigate a detailed failure           | Use the delivered report with normal application logs      |
 
 ### Who does what
 
-| Role       | What they do                                                              |
-| ---------- | ------------------------------------------------------------------------- |
-| Operator | Configures the recipient, webhook, privacy, and rate-limit values in the host application |
-| Developer | Reads the delivered report and application logs, then fixes the cause |
+| Role      | What they do                                                                              |
+| --------- | ----------------------------------------------------------------------------------------- |
+| Operator  | Configures the recipient, webhook, privacy, and rate-limit values in the host application |
+| Developer | Reads the delivered report and application logs, then fixes the cause                     |
 
 ## Troubleshooting
 
-| What you see                           | What it means                                       | What to do                                                      |
-| -------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------- |
-| No report arrives | Reporting is disabled, no recipient is configured, or the mail queue is not running | Check `CAPELL_EXCEPTION_REPORTS_ENABLED`, `EXCEPTION_REPORT_RECIPIENT`, and the host queue worker |
-| The webhook receives nothing | Webhook delivery is disabled or its HTTPS/allow-list/signing configuration is invalid | Check the webhook environment variables and application logs; webhook failures never replace the original exception |
-| You get too many emails | A noisy error is firing often | Adjust signature/global rate limits or enable the digest in application configuration |
-| A report has less context than expected | The relevant privacy option is off by default | Enable only the necessary opt-in context, preferably in a safe environment first |
-| A report contains `[redacted]` | The sanitizer removed a secret-like value or personal data | This is expected; use controlled application logs if deeper diagnostics are needed |
+| What you see                            | What it means                                                                         | What to do                                                                                                          |
+| --------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| No report arrives                       | Reporting is disabled, no recipient is configured, or the mail queue is not running   | Check `CAPELL_EXCEPTION_REPORTS_ENABLED`, `EXCEPTION_REPORT_RECIPIENT`, and the host queue worker                   |
+| The webhook receives nothing            | Webhook delivery is disabled or its HTTPS/allow-list/signing configuration is invalid | Check the webhook environment variables and application logs; webhook failures never replace the original exception |
+| You get too many emails                 | A noisy error is firing often                                                         | Adjust signature/global rate limits or enable the digest in application configuration                               |
+| A report has less context than expected | The relevant privacy option is off by default                                         | Enable only the necessary opt-in context, preferably in a safe environment first                                    |
+| A report contains `[redacted]`          | The sanitizer removed a secret-like value or personal data                            | This is expected; use controlled application logs if deeper diagnostics are needed                                  |

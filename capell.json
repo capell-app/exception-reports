@@ -66,14 +66,9 @@
             "encryptedFields": [],
             "hashedTokenFields": [],
             "redactedOutputClasses": [
-                "Capell\\ExceptionReports\\Support\\ExceptionReportMailSanitizer",
-                "Capell\\ExceptionReports\\Data\\ExceptionReportData",
-                "Capell\\ExceptionReports\\Mail\\UnhandledExceptionReported",
-                "Capell\\ExceptionReports\\Actions\\SendExceptionReportWebhookAction"
+                "Capell\\ExceptionReports\\Support\\ExceptionReportMailSanitizer"
             ],
-            "plaintextJustifications": [
-                "Sanitized exception reports are transient queue, email, and optional webhook payloads; IP address, user identity, stack traces, and route parameters are disabled by default and require explicit configuration."
-            ]
+            "plaintextJustifications": []
         },
         "publicOutput": {
             "cacheSafe": false,
