@@ -17,7 +17,10 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Exception\ExceptionInterface as ConsoleException;
+use Symfony\Component\Mailer\Exception\HttpTransportException;
+use Symfony\Contracts\HttpClient\ResponseInterface;
 
 /**
  * @param  array<string, mixed>  $values
@@ -66,6 +69,19 @@ function exceptionReportsTestIntValue(array $values, string $key): int
     return (int) $value;
 }
 
+function exceptionReportsPostmarkFailure(int $errorCode, string $message = 'Provider response containing customer@example.test'): HttpTransportException
+{
+    $response = Mockery::mock(ResponseInterface::class);
+    $response->shouldReceive('getContent')
+        ->with(false)
+        ->andReturn(json_encode([
+            'ErrorCode' => $errorCode,
+            'Message' => $message,
+        ], JSON_THROW_ON_ERROR));
+
+    return new HttpTransportException('Unable to send an email: ' . $message, $response);
+}
+
 beforeEach(function (): void {
     Cache::setDefaultDriver('array');
     Cache::flush();
@@ -90,7 +106,59 @@ beforeEach(function (): void {
     config()->set('capell-exception-reports.webhook.allowed_hosts', []);
     config()->set('capell-exception-reports.webhook.signing_secret', null);
     config()->set('capell-exception-reports.webhook.include_trace', false);
+    config()->set('capell-exception-reports.suppressed_mail_failures.logging.enabled', false);
+    config()->set('capell-exception-reports.suppressed_mail_failures.logging.channel', null);
     config()->set('services.exception_reports.to', null);
+});
+
+it('does not email or log inactive Postmark recipients through the exception reporter', function (): void {
+    Mail::fake();
+    $log = Log::spy();
+
+    report(exceptionReportsPostmarkFailure(406));
+
+    Mail::assertNothingQueued();
+    $log->shouldNotHaveReceived('error');
+});
+
+it('short circuits inactive Postmark recipients when the action is called directly', function (): void {
+    Mail::fake();
+
+    ReportExceptionByEmailAction::run(exceptionReportsPostmarkFailure(406));
+
+    Mail::assertNothingQueued();
+});
+
+it('keeps other Postmark failures reportable', function (int $errorCode): void {
+    Mail::fake();
+
+    ReportExceptionByEmailAction::run(exceptionReportsPostmarkFailure($errorCode));
+
+    Mail::assertQueued(UnhandledExceptionReported::class, 1);
+})->with([
+    'authentication' => 10,
+    'rate limited' => 429,
+    'server failure' => 500,
+]);
+
+it('can write a sanitized inactive recipient notice to an explicitly configured channel', function (): void {
+    Mail::fake();
+    config()->set('capell-exception-reports.suppressed_mail_failures.logging.enabled', true);
+    config()->set('capell-exception-reports.suppressed_mail_failures.logging.channel', 'email-delivery');
+
+    $logger = Mockery::mock(LoggerInterface::class);
+    Log::shouldReceive('channel')->once()->with('email-delivery')->andReturn($logger);
+    $logger->shouldReceive('notice')
+        ->once()
+        ->with('Suppressed a non-actionable Postmark delivery failure.', [
+            'provider' => 'postmark',
+            'error_code' => 406,
+            'reason' => 'inactive_recipient',
+        ]);
+
+    ReportExceptionByEmailAction::run(exceptionReportsPostmarkFailure(406, 'Inactive recipient customer@example.test token=raw-secret'));
+
+    Mail::assertNothingQueued();
 });
 
 it('queues exception reports by email', function (): void {

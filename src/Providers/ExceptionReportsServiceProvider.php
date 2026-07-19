@@ -7,6 +7,7 @@ namespace Capell\ExceptionReports\Providers;
 use Capell\Core\Support\Packages\AbstractPackageServiceProvider;
 use Capell\ExceptionReports\Actions\ReportExceptionByEmailAction;
 use Capell\ExceptionReports\Support\ExceptionReportMailSanitizer;
+use Capell\ExceptionReports\Support\InactivePostmarkRecipientFailure;
 use Illuminate\Contracts\Debug\ExceptionHandler as ExceptionHandlerContract;
 use Illuminate\Foundation\Exceptions\Handler;
 use Illuminate\Support\Facades\Log;
@@ -53,9 +54,15 @@ final class ExceptionReportsServiceProvider extends AbstractPackageServiceProvid
 
         $this->reporterRegistered = true;
 
-        $handler->reportable(function (Throwable $exception): void {
+        $handler->reportable(function (Throwable $exception): ?bool {
+            if (InactivePostmarkRecipientFailure::matches($exception)) {
+                InactivePostmarkRecipientFailure::logNoticeIfEnabled();
+
+                return false;
+            }
+
             if (! config('capell-exception-reports.enabled', true)) {
-                return;
+                return null;
             }
 
             try {
@@ -63,6 +70,8 @@ final class ExceptionReportsServiceProvider extends AbstractPackageServiceProvid
             } catch (Throwable $reporterFailure) {
                 $this->logReporterFailure($reporterFailure, $exception);
             }
+
+            return null;
         });
 
         return null;

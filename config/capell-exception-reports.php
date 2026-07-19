@@ -7,6 +7,13 @@ return [
 
     'recipient' => env('EXCEPTION_REPORT_RECIPIENT', env('MAIL_FROM_ADDRESS')),
 
+    'suppressed_mail_failures' => [
+        'logging' => [
+            'enabled' => filter_var(env('CAPELL_EXCEPTION_REPORTS_SUPPRESSED_MAIL_LOGGING_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
+            'channel' => env('CAPELL_EXCEPTION_REPORTS_SUPPRESSED_MAIL_LOG_CHANNEL'),
+        ],
+    ],
+
     'privacy' => [
         'include_ip_address' => filter_var(env('CAPELL_EXCEPTION_REPORTS_INCLUDE_IP_ADDRESS', false), FILTER_VALIDATE_BOOLEAN),
         'include_user_identity' => filter_var(env('CAPELL_EXCEPTION_REPORTS_INCLUDE_USER_IDENTITY', false), FILTER_VALIDATE_BOOLEAN),

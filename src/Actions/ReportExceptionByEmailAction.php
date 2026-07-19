@@ -7,6 +7,7 @@ namespace Capell\ExceptionReports\Actions;
 use Capell\ExceptionReports\Data\ExceptionReportData;
 use Capell\ExceptionReports\Mail\UnhandledExceptionReported;
 use Capell\ExceptionReports\Support\ExceptionReportMailSanitizer;
+use Capell\ExceptionReports\Support\InactivePostmarkRecipientFailure;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
@@ -26,6 +27,12 @@ final class ReportExceptionByEmailAction
 
     public function handle(Throwable $exception): void
     {
+        if (InactivePostmarkRecipientFailure::matches($exception)) {
+            InactivePostmarkRecipientFailure::logNoticeIfEnabled();
+
+            return;
+        }
+
         $recipient = $this->recipient();
         $webhookUrl = $this->webhookUrl();
 
