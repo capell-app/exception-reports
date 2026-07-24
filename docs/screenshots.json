@@ -7,6 +7,7 @@
     "entries": [
         {
             "id": "exception-reports-extension-card",
+            "colorSchemes": ["light"],
             "title": "Exception Reports extension card.",
             "package": "exception-reports",
             "surface": "marketplace",
@@ -20,16 +21,19 @@
         },
         {
             "id": "exception-reports-email-preview",
-            "title": "Exception Reports rendered email preview.",
+            "title": "Illustrative exception reports rendered email preview preview.",
             "package": "exception-reports",
-            "surface": "email",
-            "targetType": "rendered-email",
-            "target": "exception-email-preview",
+            "surface": "frontend",
+            "targetType": "frontend-url",
+            "target": "/screenshot-fixtures/catalogue/exception-reports/exception-reports-email-preview",
             "required": true,
             "path": "docs/screenshots/exception-email-preview.png",
             "screenshotPath": "packages/exception-reports/docs/screenshots/exception-email-preview.png",
-            "notes": "Committed PNG captured from the rendered sanitized exception report mailable.",
-            "useCase": "An operator verifies the report email includes useful context without unsafe diagnostic markup."
+            "notes": "Illustrative deterministic catalogue fixture, not a live package UI capture. Committed PNG captured from the rendered sanitized exception report mailable.",
+            "useCase": "An operator verifies the report email includes useful context without unsafe diagnostic markup.",
+            "url": "/screenshot-fixtures/catalogue/exception-reports/exception-reports-email-preview",
+            "colorSchemes": ["light", "dark"],
+            "fixtureKind": "illustrative-catalogue"
         }
     ]
 }

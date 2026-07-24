@@ -205,7 +205,7 @@ it('validates the manifest and marketplace assets', function (): void {
         ->toBeArray()
         ->and($emailScreenshot['path'] ?? null)->toBe('docs/screenshots/exception-email-preview.png')
         ->and($emailScreenshotEntry)->toBeArray()
-        ->and($emailScreenshotEntry['targetType'] ?? null)->toBe('rendered-email')
+        ->and($emailScreenshotEntry['targetType'] ?? null)->toBe('frontend-url')
         ->and($emailScreenshotEntry['path'] ?? null)->toBe('docs/screenshots/exception-email-preview.png')
         ->and($emailScreenshotEntry['screenshotPath'] ?? null)->toBe('packages/exception-reports/docs/screenshots/exception-email-preview.png');
 });

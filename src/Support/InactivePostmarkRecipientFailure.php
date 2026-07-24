@@ -10,7 +10,7 @@ use Throwable;
 
 final class InactivePostmarkRecipientFailure
 {
-    private const ERROR_CODE = 406;
+    private const int ERROR_CODE = 406;
 
     public static function matches(Throwable $exception): bool
     {
@@ -20,10 +20,6 @@ final class InactivePostmarkRecipientFailure
 
         try {
             $content = $exception->getResponse()->getContent(false);
-
-            if (! is_string($content)) {
-                return false;
-            }
 
             $payload = json_decode(
                 $content,
