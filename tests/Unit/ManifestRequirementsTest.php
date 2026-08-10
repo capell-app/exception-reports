@@ -201,11 +201,12 @@ it('validates the manifest and marketplace assets', function (): void {
     $emailScreenshotEntry = collect($screenshotEntries)
         ->first(fn (array $screenshot): bool => ($screenshot['id'] ?? null) === 'exception-reports-email-preview');
 
-    expect($emailScreenshot)
-        ->toBeArray()
-        ->and($emailScreenshot['path'] ?? null)->toBe('docs/screenshots/exception-email-preview.png')
+    expect($emailScreenshot)->toBeNull()
         ->and($emailScreenshotEntry)->toBeArray()
         ->and($emailScreenshotEntry['targetType'] ?? null)->toBe('frontend-url')
         ->and($emailScreenshotEntry['path'] ?? null)->toBe('docs/screenshots/exception-email-preview.png')
-        ->and($emailScreenshotEntry['screenshotPath'] ?? null)->toBe('packages/exception-reports/docs/screenshots/exception-email-preview.png');
+        ->and($emailScreenshotEntry['screenshotPath'] ?? null)->toBe('packages/exception-reports/docs/screenshots/exception-email-preview.png')
+        ->and($emailScreenshotEntry['required'] ?? null)->toBeFalse()
+        ->and($emailScreenshotEntry['scenario'] ?? null)->toBe('static-html')
+        ->and($emailScreenshotEntry['acceptance'] ?? null)->toBe('diagnostic-only');
 });

@@ -26,14 +26,16 @@
             "surface": "frontend",
             "targetType": "frontend-url",
             "target": "/screenshot-fixtures/catalogue/exception-reports/exception-reports-email-preview",
-            "required": true,
+            "required": false,
             "path": "docs/screenshots/exception-email-preview.png",
             "screenshotPath": "packages/exception-reports/docs/screenshots/exception-email-preview.png",
-            "notes": "Illustrative deterministic catalogue fixture, not a live package UI capture. Committed PNG captured from the rendered sanitized exception report mailable.",
+            "notes": "Diagnostic-only static preview. It is excluded from documentation, release, Marketplace, and promotional evidence until a package-owned rendered mailable fixture is captured by the shared runner.",
             "useCase": "An operator verifies the report email includes useful context without unsafe diagnostic markup.",
             "url": "/screenshot-fixtures/catalogue/exception-reports/exception-reports-email-preview",
             "colorSchemes": ["light", "dark"],
-            "fixtureKind": "illustrative-catalogue"
+            "fixtureKind": "illustrative-catalogue",
+            "scenario": "static-html",
+            "acceptance": "diagnostic-only"
         }
     ]
 }

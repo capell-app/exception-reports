@@ -4,14 +4,8 @@ declare(strict_types=1);
 
 use Capell\ExceptionReports\Data\ExceptionReportData;
 use Capell\ExceptionReports\Mail\UnhandledExceptionReported;
-use Symfony\Component\Process\Process;
 
-it('keeps the committed email preview screenshot tied to the rendered mailable', function (): void {
-    $packagePath = dirname(__DIR__, 2);
-    $repositoryPath = dirname(__DIR__, 4);
-    $screenshotPath = $packagePath . '/docs/screenshots/exception-email-preview.png';
-    $temporaryHtmlPath = $packagePath . '/docs/screenshots/.exception-email-preview.html';
-
+it('renders a sanitized email fixture for the shared screenshot runner', function (): void {
     $mail = new UnhandledExceptionReported(ExceptionReportData::from(exceptionReportsEmailPreviewReport()));
     $html = (string) $mail->render();
 
@@ -22,34 +16,6 @@ it('keeps the committed email preview screenshot tied to the rendered mailable',
         ->toContain('[redacted]')
         ->not->toContain('secret-token')
         ->not->toContain('<script');
-
-    if (getenv('CAPELL_REFRESH_EXCEPTION_REPORTS_EMAIL_SCREENSHOT') === '1') {
-        file_put_contents($temporaryHtmlPath, $html);
-
-        try {
-            $process = new Process([
-                'node',
-                $packagePath . '/scripts/capture-email-preview.mjs',
-                $temporaryHtmlPath,
-                $screenshotPath,
-            ], $repositoryPath);
-            $process->setTimeout(60);
-            $process->mustRun();
-        } finally {
-            if (is_file($temporaryHtmlPath)) {
-                unlink($temporaryHtmlPath);
-            }
-        }
-    }
-
-    expect($screenshotPath)->toBeFile();
-
-    $dimensions = getimagesize($screenshotPath);
-
-    expect($dimensions)->toBeArray()
-        ->and($dimensions[0] ?? null)->toBe(760)
-        ->and($dimensions[1] ?? null)->toBeGreaterThan(1100)
-        ->toBeLessThan(7000);
 });
 
 /**

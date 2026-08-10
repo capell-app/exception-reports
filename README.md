@@ -35,10 +35,8 @@ Screenshot contract: `docs/screenshots.json`.
 
 ![Exception Reports extension card](docs/screenshots/extension-card.svg)
 
-![Exception Reports rendered email preview](docs/screenshots/exception-email-preview.png)
-
 - Exception Reports extension card (marketplace, required).
-- Exception Reports rendered email preview (email, required).
+- Exception Reports rendered email preview remains diagnostic-only until a route-backed package fixture has a matching runner receipt.
 
 ## Technical Shape
 
