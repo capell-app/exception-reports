@@ -29,7 +29,10 @@ final class ExceptionReportsServiceProvider extends AbstractPackageServiceProvid
             ->name(self::$name)
             ->hasConfigFile(self::$name)
             ->hasTranslations()
-            ->hasViews(self::$name);
+            ->hasViews(self::$name)
+            ->hasMigrations([
+                '2026_08_22_000001_create_exception_reports_table',
+            ]);
     }
 
     public function packageRegistered(): void

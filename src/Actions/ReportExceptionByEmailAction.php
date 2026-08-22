@@ -33,6 +33,10 @@ final class ReportExceptionByEmailAction
             return;
         }
 
+        $request = $this->currentRequest();
+
+        $this->recordReport($exception, $request);
+
         $recipient = $this->recipient();
         $webhookUrl = $this->webhookUrl();
 
@@ -46,14 +50,14 @@ final class ReportExceptionByEmailAction
                     QueueRateLimitedExceptionDigestAction::run(
                         $exception,
                         $recipient,
-                        $this->safeReport($exception, $this->currentRequest()),
+                        $this->safeReport($exception, $request),
                     );
                 }
 
                 return;
             }
 
-            $report = $this->safeReport($exception, $this->currentRequest());
+            $report = $this->safeReport($exception, $request);
 
             if ($recipient !== null) {
                 Mail::to($recipient)->queue(new UnhandledExceptionReported($report));
@@ -64,6 +68,21 @@ final class ReportExceptionByEmailAction
             }
         } catch (Throwable $reporterFailure) {
             $this->logReporterFailure($reporterFailure, $exception);
+        }
+    }
+
+    /**
+     * Persist a durable DB record for every reported exception, regardless of
+     * recipient/webhook configuration or email rate limiting. A DB-write
+     * failure never blocks the email/webhook path, matching the fault
+     * isolation already applied to the rest of this reporter.
+     */
+    private function recordReport(Throwable $exception, ?Request $request): void
+    {
+        try {
+            RecordExceptionReportAction::run($exception, $request);
+        } catch (Throwable $recordingFailure) {
+            $this->logRecordingFailure($recordingFailure, $exception);
         }
     }
 
@@ -361,6 +380,25 @@ final class ReportExceptionByEmailAction
                 resolve(ExceptionReportMailSanitizer::class)->sanitizeLogContext([
                     'reporter_exception' => $reporterFailure::class,
                     'reporter_message' => Str::limit($reporterFailure->getMessage(), 500, '...'),
+                    'original_exception' => $originalException::class,
+                    'original_message' => Str::limit($originalException->getMessage(), 500, '...'),
+                    'original_file' => $originalException->getFile(),
+                    'original_line' => $originalException->getLine(),
+                ]),
+            );
+        } catch (Throwable) {
+            //
+        }
+    }
+
+    private function logRecordingFailure(Throwable $recordingFailure, Throwable $originalException): void
+    {
+        try {
+            Log::warning(
+                'Exception Reports failed to persist an exception report.',
+                resolve(ExceptionReportMailSanitizer::class)->sanitizeLogContext([
+                    'reporter_exception' => $recordingFailure::class,
+                    'reporter_message' => Str::limit($recordingFailure->getMessage(), 500, '...'),
                     'original_exception' => $originalException::class,
                     'original_message' => Str::limit($originalException->getMessage(), 500, '...'),
                     'original_file' => $originalException->getFile(),

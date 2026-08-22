@@ -35,9 +35,9 @@
         }
     ],
     "database": {
-        "migrations": false,
+        "migrations": true,
         "settings": false,
-        "requiredTables": []
+        "requiredTables": ["exception_reports"]
     },
     "commands": {
         "install": null,
@@ -46,7 +46,8 @@
         "doctor": null
     },
     "actions": {
-        "reportExceptionByEmail": "Capell\\ExceptionReports\\Actions\\ReportExceptionByEmailAction"
+        "reportExceptionByEmail": "Capell\\ExceptionReports\\Actions\\ReportExceptionByEmailAction",
+        "recordExceptionReport": "Capell\\ExceptionReports\\Actions\\RecordExceptionReportAction"
     },
     "settings": [],
     "permissions": [],

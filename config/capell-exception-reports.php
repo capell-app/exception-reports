@@ -44,4 +44,9 @@ return [
         'connect_timeout_seconds' => (int) env('CAPELL_EXCEPTION_REPORTS_WEBHOOK_CONNECT_TIMEOUT_SECONDS', 2),
         'include_trace' => filter_var(env('CAPELL_EXCEPTION_REPORTS_WEBHOOK_INCLUDE_TRACE', false), FILTER_VALIDATE_BOOLEAN),
     ],
+
+    'persistence' => [
+        'enabled' => filter_var(env('CAPELL_EXCEPTION_REPORTS_PERSISTENCE_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+        'table' => env('CAPELL_EXCEPTION_REPORTS_PERSISTENCE_TABLE', 'exception_reports'),
+    ],
 ];
