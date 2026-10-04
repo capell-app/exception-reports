@@ -10,8 +10,6 @@ Exception Reports queues sanitized unhandled-exception reports to configured ema
 
 Operators receive a sanitized email or webhook payload for triage. The package has no admin resource; recipients, privacy options, and delivery behavior are configured at application level.
 
-Evidence: [`capell.json`](capell.json), [`config/capell-exception-reports.php`](config/capell-exception-reports.php), [`src/Actions/ReportExceptionByEmailAction.php`](src/Actions/ReportExceptionByEmailAction.php), [`src/Actions/SendExceptionReportWebhookAction.php`](src/Actions/SendExceptionReportWebhookAction.php), [`docs/screenshots.json`](docs/screenshots.json), [`src/Mail/UnhandledExceptionReported.php`](src/Mail/UnhandledExceptionReported.php).
-
 Status details:
 
 - Status: Available
@@ -26,8 +24,6 @@ Status details:
 **For developers:** A typed report boundary and sanitizer keep request secrets out of queued payloads, while trace, identity, IP, and route-parameter details remain opt-in.
 
 **For teams:** Operational failures reach the configured owner with enough context to start triage, and repeated signatures can be rate limited or summarized instead of producing duplicate alerts.
-
-Evidence: [`src/Data/ExceptionReportData.php`](src/Data/ExceptionReportData.php), [`src/Support/ExceptionReportMailSanitizer.php`](src/Support/ExceptionReportMailSanitizer.php), [`config/capell-exception-reports.php`](config/capell-exception-reports.php), [`tests/Feature/ExceptionEmailReportingTest.php`](tests/Feature/ExceptionEmailReportingTest.php), [`src/Actions/QueueRateLimitedExceptionDigestAction.php`](src/Actions/QueueRateLimitedExceptionDigestAction.php), [`src/Providers/ExceptionReportsServiceProvider.php`](src/Providers/ExceptionReportsServiceProvider.php), [`tests/Feature/Health/ExceptionReportsHealthCheckTest.php`](tests/Feature/Health/ExceptionReportsHealthCheckTest.php).
 
 ## Screens And Workflow
 
@@ -51,6 +47,7 @@ Screenshot contract: `docs/screenshots.json`.
 ### Migrations
 
 - `packages/exception-reports/database/migrations/2026_08_22_000001_create_exception_reports_table.php`
+- `packages/exception-reports/database/migrations/2026_09_29_120000_remove_implicit_timestamp_updates_from_exception_reports.php`
 
 ### Models
 
@@ -76,6 +73,7 @@ Screenshot contract: `docs/screenshots.json`.
 ### Manifest contributions
 
 - `health-check: Capell\ExceptionReports\Health\ExceptionReportsHealthCheck`
+- `migration: Capell\ExceptionReports\Manifest\ExceptionReportsMigrationsContribution`
 
 ### Health checks
 
@@ -90,7 +88,7 @@ Screenshot contract: `docs/screenshots.json`.
 
 - Required tables: `exception_reports`.
 - Models: `ExceptionReport`.
-- Migration files: `2026_08_22_000001_create_exception_reports_table.php`.
+- Migration files: `2026_08_22_000001_create_exception_reports_table.php`, `2026_09_29_120000_remove_implicit_timestamp_updates_from_exception_reports.php`.
 - Migration impact: run host migrations through the package install flow before opening package surfaces.
 - Deletion/retention behaviour: Docs gap: migrations and manifest contributions do not prove a cascade, pruning command, or timed retention policy.
 
@@ -130,6 +128,7 @@ Screenshot contract: `docs/screenshots.json`.
 
 - [Package docs](docs/README.md)
 - [Overview](docs/overview.md)
+- [Worked extension examples](docs/extension-contracts.md)
 - [Admin guide](docs/admin-guide.md)
 - Configuration files: [`config/capell-exception-reports.php`](config/capell-exception-reports.php).
 - [Troubleshooting](#troubleshooting)
@@ -139,6 +138,5 @@ Screenshot contract: `docs/screenshots.json`.
 - [Capell documentation design system](../../docs/DESIGN_SYSTEM.md)
 - [Capell and package ERD notes](../../docs/erd/capell-and-package-erds.md)
 - Related packages: [Diagnostics](../diagnostics/README.md).
-- Focused tests: `vendor/bin/pest packages/exception-reports/tests --configuration=phpunit.xml`.
 
 <!-- prettier-ignore-end -->

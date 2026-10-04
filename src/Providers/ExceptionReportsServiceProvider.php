@@ -12,6 +12,7 @@ use Illuminate\Contracts\Debug\ExceptionHandler as ExceptionHandlerContract;
 use Illuminate\Foundation\Exceptions\Handler;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Override;
 use Spatie\LaravelPackageTools\Package;
 use Throwable;
 
@@ -23,6 +24,7 @@ final class ExceptionReportsServiceProvider extends AbstractPackageServiceProvid
 
     private bool $reporterRegistered = false;
 
+    #[Override]
     public function configurePackage(Package $package): void
     {
         $package
@@ -32,9 +34,11 @@ final class ExceptionReportsServiceProvider extends AbstractPackageServiceProvid
             ->hasViews(self::$name)
             ->hasMigrations([
                 '2026_08_22_000001_create_exception_reports_table',
+                '2026_09_29_120000_remove_implicit_timestamp_updates_from_exception_reports',
             ]);
     }
 
+    #[Override]
     public function packageRegistered(): void
     {
         $this->app->singleton(ExceptionReportMailSanitizer::class);
