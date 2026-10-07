@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('job_class')->nullable();
             $table->string('job_id')->nullable();
             $table->text('url')->nullable();
-            $table->timestamp('reported_at');
+            $table->dateTime('reported_at');
             $table->timestamps();
 
             $table->index('exception_class');
