@@ -203,10 +203,16 @@ it('validates the manifest and marketplace assets', function (): void {
 
     expect($emailScreenshot)->toBeNull()
         ->and($emailScreenshotEntry)->toBeArray()
-        ->and($emailScreenshotEntry['targetType'] ?? null)->toBe('frontend-url')
+        ->and($emailScreenshotEntry['targetType'] ?? null)->toBe('artifact')
+        ->and($emailScreenshotEntry['target'] ?? null)->toBe('exception-reports-email-preview')
+        ->and($emailScreenshotEntry['fixtureKind'] ?? null)->toBe('illustrative-catalogue')
         ->and($emailScreenshotEntry['path'] ?? null)->toBe('docs/screenshots/exception-email-preview.png')
-        ->and($emailScreenshotEntry['screenshotPath'] ?? null)->toBe('packages/exception-reports/docs/screenshots/exception-email-preview.png')
         ->and($emailScreenshotEntry['required'] ?? null)->toBeFalse()
-        ->and($emailScreenshotEntry['scenario'] ?? null)->toBe('static-html')
-        ->and($emailScreenshotEntry['acceptance'] ?? null)->toBe('diagnostic-only');
+        ->and($emailScreenshotEntry['acceptance'] ?? null)->toBe('diagnostic-only')
+        ->and(File::exists($packagePath . '/docs/screenshots/exception-email-preview.png'))->toBeTrue()
+        ->and(collect($screenshots)->pluck('path')->all())->not->toContain('docs/screenshots/exception-email-preview.png');
+
+    foreach (['url', 'scenario', 'screenshotPath', 'colorSchemes'] as $runnerField) {
+        expect($emailScreenshotEntry)->not->toHaveKey($runnerField);
+    }
 });
