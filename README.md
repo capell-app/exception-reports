@@ -29,9 +29,9 @@ Status details:
 
 Screenshot contract: `docs/screenshots.json`.
 
-![Exception Reports extension card](docs/screenshots/extension-card.svg)
+![Exception Reports extension preview image](docs/assets/marketplace/extension-card.svg)
 
-- Exception Reports extension card (marketplace, required evidence).
+- Exception Reports extension card (marketplace, supplementary documentation fixture).
 - Illustrative exception reports rendered email preview preview (frontend, supplementary documentation fixture).
 
 ## Technical Shape
@@ -122,7 +122,7 @@ Screenshot contract: `docs/screenshots.json`.
 ## Quick Start
 
 1. Install the package: `composer require capell-app/exception-reports`.
-2. Open the package detail or install-intent surface and confirm the Exception Reports extension card is present.
+2. Verify the package provider and manifest contributions are registered in the host app.
 
 ## Next Steps
 

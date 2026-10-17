@@ -36,6 +36,7 @@
         {
             "type": "migration",
             "class": "Capell\\ExceptionReports\\Manifest\\ExceptionReportsMigrationsContribution",
+            "requiredTables": ["exception_reports"],
             "migrationFiles": [
                 "2026_08_22_000001_create_exception_reports_table",
                 "2026_09_29_120000_remove_implicit_timestamp_updates_from_exception_reports"

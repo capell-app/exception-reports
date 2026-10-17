@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Capell\ExceptionReports\Providers;
 
+use Capell\Core\Enums\ExtensionStatusEnum;
+use Capell\Core\Facades\CapellCore;
+use Capell\Core\Support\Extensions\ExtensionLifecycleRepository;
 use Capell\Core\Support\Packages\AbstractPackageServiceProvider;
 use Capell\ExceptionReports\Actions\ReportExceptionByEmailAction;
 use Capell\ExceptionReports\Support\ExceptionReportMailSanitizer;
@@ -15,6 +18,7 @@ use Illuminate\Support\Str;
 use Override;
 use Spatie\LaravelPackageTools\Package;
 use Throwable;
+use WeakMap;
 
 final class ExceptionReportsServiceProvider extends AbstractPackageServiceProvider
 {
@@ -22,7 +26,8 @@ final class ExceptionReportsServiceProvider extends AbstractPackageServiceProvid
 
     public static string $packageName = 'capell-app/exception-reports';
 
-    private bool $reporterRegistered = false;
+    /** @var WeakMap<Handler, true> */
+    private WeakMap $reporterHandlers;
 
     #[Override]
     public function configurePackage(Package $package): void
@@ -42,24 +47,26 @@ final class ExceptionReportsServiceProvider extends AbstractPackageServiceProvid
     public function packageRegistered(): void
     {
         $this->app->singleton(ExceptionReportMailSanitizer::class);
+        $this->reporterHandlers ??= new WeakMap;
 
-        $this->app->afterResolving(
+        $this->callAfterResolving(
             ExceptionHandlerContract::class,
             fn (ExceptionHandlerContract $handler): null => $this->registerExceptionReporter($handler),
         );
-
-        if ($this->app->resolved(ExceptionHandlerContract::class)) {
-            $this->registerExceptionReporter($this->app->make(ExceptionHandlerContract::class));
-        }
     }
+
+    // Enrol for late enable; handler observation must start before installation and provider boot.
+    #[Override]
+    protected function bootInstalledRuntime(): void {}
 
     private function registerExceptionReporter(ExceptionHandlerContract $handler): null
     {
-        if ($this->reporterRegistered || ! $handler instanceof Handler) {
+        if (! $handler instanceof Handler || isset($this->reporterHandlers[$handler])) {
             return null;
         }
 
-        $this->reporterRegistered = true;
+        // Transient bindings can trigger callAfterResolving twice for the same handler.
+        $this->reporterHandlers[$handler] = true;
 
         $handler->reportable(function (Throwable $exception): ?bool {
             if (InactivePostmarkRecipientFailure::matches($exception)) {
@@ -68,20 +75,39 @@ final class ExceptionReportsServiceProvider extends AbstractPackageServiceProvid
                 return false;
             }
 
-            if (! config('capell-exception-reports.enabled', true)) {
+            if (! config('capell-exception-reports.enabled', true) || $this->packageDisabled()) {
                 return null;
             }
 
             try {
                 ReportExceptionByEmailAction::run($exception);
-            } catch (Throwable $reporterFailure) {
-                $this->logReporterFailure($reporterFailure, $exception);
+            } catch (Throwable $throwable) {
+                $this->logReporterFailure($throwable, $exception);
             }
 
             return null;
         });
 
         return null;
+    }
+
+    // Not-yet-installed packages keep reporting so installation failures still reach operators.
+    private function packageDisabled(): bool
+    {
+        $name = self::$packageName;
+
+        try {
+            if (CapellCore::isPackageEnabled($name) || ! CapellCore::hasPackage($name)) {
+                return false;
+            }
+
+            $status = resolve(ExtensionLifecycleRepository::class)->status($name, collect([$name => CapellCore::getPackage($name)]));
+        } catch (Throwable) {
+            // An unreadable package state must not hide the exception being reported.
+            return false;
+        }
+
+        return $status === ExtensionStatusEnum::Disabled;
     }
 
     private function logReporterFailure(Throwable $reporterFailure, Throwable $originalException): void
