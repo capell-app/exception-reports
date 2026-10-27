@@ -1,6 +1,6 @@
 # Using Exception Reports
 
-This guide is for the developer or operator who configures exception delivery for a Capell host application. Exception Reports registers a Laravel exception reporter, queues a sanitized email, and can optionally send a signed webhook payload. It does not create an admin inbox, settings screen, or stored error history.
+This guide is for the developer or operator who configures exception delivery for a Capell host application. Exception Reports registers a Laravel exception reporter, queues a sanitized email, and can optionally send a signed webhook payload. It stores a minimal sanitised database record by default, independently of email/webhook delivery. It does not create an admin inbox or settings screen.
 
 ## Configuring Exception Reports
 
@@ -27,9 +27,15 @@ This guide is for the developer or operator who configures exception delivery fo
 
 ### How to triage a report
 
-1. Open the delivered email or incident-channel payload; there is no report record inside Capell admin.
+1. Open the delivered email or incident-channel payload. If no delivery arrives, ask an authorised developer to use the linked database investigation recipe; there is no report inbox inside Capell admin.
 2. Start with the exception class, message, source, environment, request method, route, and timestamp.
 3. Forward the sanitized delivery to the developer who owns the affected route or command. If trace collection is disabled, use your normal application logs for deeper investigation.
+
+### How to investigate without an email
+
+Ask an authorised developer to follow the [database investigation recipe](extension-examples.md). It explains how to find a sanitised record, correlate application logs and check delivery separately. There is no report inbox in Capell admin.
+
+The host operator owns database access, backups and retention. Restrict access and agree a retention and deletion process. Turning persistence off stops future writes and does not delete existing records.
 
 ### How to handle a flood of notifications
 
@@ -41,30 +47,30 @@ This guide is for the developer or operator who configures exception delivery fo
 
 ### Turn on first
 
-- **A monitored recipient and working queue.** Configure both before you rely on the package, so a real error reaches a person rather than a silent queue failure.
+- A monitored recipient and working queue. Configure both before you rely on the package, so a real error reaches a person rather than a silent queue failure.
 
 ### Add when needed
 
-| Need                                     | What to use                                                |
-| ---------------------------------------- | ---------------------------------------------------------- |
-| Make sure errors reach a person          | Set `EXCEPTION_REPORT_RECIPIENT` and verify the mail queue |
-| Post errors into a chat or other tool    | Configure the signed HTTPS webhook and its host allow-list |
-| Avoid being flooded by a repeating error | Configure rate limits and enable the optional email digest |
-| Investigate a detailed failure           | Use the delivered report with normal application logs      |
+| Need                                     | What to use                                                  |
+| ---------------------------------------- | ------------------------------------------------------------ |
+| Make sure errors reach a person          | Set `EXCEPTION_REPORT_RECIPIENT` and verify the mail queue   |
+| Post errors into a chat or other tool    | Configure the signed HTTPS webhook and its host allow-list   |
+| Avoid being flooded by a repeating error | Configure rate limits and enable the optional email digest   |
+| Investigate a detailed failure           | Locate the sanitised database record and correlate host logs |
 
 ### Who does what
 
 | Role      | What they do                                                                              |
 | --------- | ----------------------------------------------------------------------------------------- |
 | Operator  | Configures the recipient, webhook, privacy, and rate-limit values in the host application |
-| Developer | Reads the delivered report and application logs, then fixes the cause                     |
+| Developer | Reads the sanitised record, delivery evidence and application logs, then fixes the cause  |
 
 ## Troubleshooting
 
-| What you see                            | What it means                                                                         | What to do                                                                                                          |
-| --------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| No report arrives                       | Reporting is disabled, no recipient is configured, or the mail queue is not running   | Check `CAPELL_EXCEPTION_REPORTS_ENABLED`, `EXCEPTION_REPORT_RECIPIENT`, and the host queue worker                   |
-| The webhook receives nothing            | Webhook delivery is disabled or its HTTPS/allow-list/signing configuration is invalid | Check the webhook environment variables and application logs; webhook failures never replace the original exception |
-| You get too many emails                 | A noisy error is firing often                                                         | Adjust signature/global rate limits or enable the digest in application configuration                               |
-| A report has less context than expected | The relevant privacy option is off by default                                         | Enable only the necessary opt-in context, preferably in a safe environment first                                    |
-| A report contains `[redacted]`          | The sanitizer removed a secret-like value or personal data                            | This is expected; use controlled application logs if deeper diagnostics are needed                                  |
+| What you see                            | What it means                                                                         | What to do                                                                                                                                     |
+| --------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| No report arrives                       | Reporting is disabled, no recipient is configured, or the mail queue is not running   | Locate the database record, then check `CAPELL_EXCEPTION_REPORTS_ENABLED`, `EXCEPTION_REPORT_RECIPIENT`, rate limits and the host queue worker |
+| The webhook receives nothing            | Webhook delivery is disabled or its HTTPS/allow-list/signing configuration is invalid | Check the webhook environment variables and application logs; webhook failures never replace the original exception                            |
+| You get too many emails                 | A noisy error is firing often                                                         | Adjust signature/global rate limits or enable the digest in application configuration                                                          |
+| A report has less context than expected | The relevant privacy option is off by default                                         | Enable only the necessary opt-in context, preferably in a safe environment first                                                               |
+| A report contains `[redacted]`          | The sanitizer removed a secret-like value or personal data                            | This is expected; use controlled application logs if deeper diagnostics are needed                                                             |

@@ -6,7 +6,7 @@
     "kind": "package",
     "capellApiVersion": "^1.0",
     "version": "1.0.0",
-    "description": "Exception Reports emails operators when Capell reports an unhandled exception, including sanitized app, request, route, user, and stack-trace context that is safe to read in an email client.",
+    "description": "Receive sanitised unhandled-exception reports by queued email or signed webhook, with rate limiting and grouped digests.",
     "product": {
         "group": "Capell Operations",
         "tier": "free",

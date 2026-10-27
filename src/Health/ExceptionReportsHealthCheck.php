@@ -62,6 +62,7 @@ final class ExceptionReportsHealthCheck implements ChecksExtensionHealth
             remediation: $loaded
                 ? null
                 : (string) __('capell-exception-reports::package.health.provider.remediation'),
+            id: 'legacy.exception.reports.provider',
         );
     }
 
@@ -82,6 +83,7 @@ final class ExceptionReportsHealthCheck implements ChecksExtensionHealth
             remediation: $configured
                 ? null
                 : (string) __('capell-exception-reports::package.health.recipient.remediation'),
+            id: 'legacy.exception.report.recipient',
         );
     }
 
@@ -99,6 +101,7 @@ final class ExceptionReportsHealthCheck implements ChecksExtensionHealth
             remediation: $ready
                 ? null
                 : (string) __('capell-exception-reports::package.health.mailer.remediation'),
+            id: 'legacy.exception.report.mailer',
         );
     }
 
@@ -115,6 +118,7 @@ final class ExceptionReportsHealthCheck implements ChecksExtensionHealth
             remediation: $ready
                 ? null
                 : (string) __('capell-exception-reports::package.health.from_address.remediation'),
+            id: 'legacy.exception.report.from.address',
         );
     }
 
@@ -132,6 +136,7 @@ final class ExceptionReportsHealthCheck implements ChecksExtensionHealth
             remediation: $ready
                 ? null
                 : (string) __('capell-exception-reports::package.health.queue.remediation'),
+            id: 'legacy.exception.report.queue.connection',
         );
     }
 
@@ -150,6 +155,7 @@ final class ExceptionReportsHealthCheck implements ChecksExtensionHealth
             remediation: $ready
                 ? null
                 : (string) __('capell-exception-reports::package.health.mail.remediation'),
+            id: 'legacy.exception.report.mail.renderer',
         );
     }
 
@@ -168,6 +174,7 @@ final class ExceptionReportsHealthCheck implements ChecksExtensionHealth
             remediation: $ready
                 ? null
                 : (string) __('capell-exception-reports::package.health.rate_limiter.remediation'),
+            id: 'legacy.exception.report.rate.limiter',
         );
     }
 
@@ -187,6 +194,7 @@ final class ExceptionReportsHealthCheck implements ChecksExtensionHealth
             remediation: $ready
                 ? null
                 : (string) __('capell-exception-reports::package.health.webhook.remediation'),
+            id: 'legacy.exception.report.webhook',
         );
     }
 
@@ -290,7 +298,7 @@ final class ExceptionReportsHealthCheck implements ChecksExtensionHealth
     private function mailViewCanRender(): bool
     {
         try {
-            (new UnhandledExceptionReported(ExceptionReportData::from([
+            new UnhandledExceptionReported(ExceptionReportData::from([
                 'subject' => 'Exception reported',
                 'source' => 'health-check',
                 'summary' => [
@@ -307,7 +315,7 @@ final class ExceptionReportsHealthCheck implements ChecksExtensionHealth
                 ],
                 'user' => [],
                 'trace' => '',
-            ])))->render();
+            ]))->render();
 
             return true;
         } catch (Throwable) {

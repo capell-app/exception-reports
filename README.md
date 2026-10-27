@@ -124,11 +124,16 @@ Screenshot contract: `docs/screenshots.json`.
 1. Install the package: `composer require capell-app/exception-reports`.
 2. Verify the package provider and manifest contributions are registered in the host app.
 
+## Upgrading
+
+No manual steps between minor versions.
+
 ## Next Steps
 
 - [Package docs](docs/README.md)
 - [Overview](docs/overview.md)
 - [Worked extension examples](docs/extension-contracts.md)
+- [Worked action walkthroughs](docs/extension-examples.md)
 - [Admin guide](docs/admin-guide.md)
 - Configuration files: [`config/capell-exception-reports.php`](config/capell-exception-reports.php).
 - [Troubleshooting](#troubleshooting)

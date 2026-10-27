@@ -1,6 +1,6 @@
 ## What it does for you
 
-Exception Reports registers with Laravel's exception handler and queues a sanitized email when an unhandled exception is reported. It can also, when explicitly enabled, send a signed payload to an approved HTTPS webhook endpoint. It does not store reports or add an admin inbox.
+Exception Reports registers with Laravel's exception handler and queues a sanitized email when an unhandled exception is reported. It can also, when explicitly enabled, send a signed payload to an approved HTTPS webhook endpoint. By default it also stores a minimal sanitised database record independently of delivery. It does not add an admin inbox.
 
 ## Setup requirements
 
@@ -26,7 +26,8 @@ There is no Exception Reports admin page. A developer configures `config/capell-
 
 ## Good to know
 
-- Reports are delivery notifications, not a historical error log. Keep a separate monitoring or logging system if you need a searchable incident history.
+- The database record is durable exception evidence, including when mail is absent or rate-limited. It is not a delivery receipt or replay queue. Use the [investigation recipe](admin-guide.md#how-to-investigate-without-an-email) through authorised database or Artisan access; keep a separate monitoring system for richer incident search and alerting.
+- Persistence defaults on through `CAPELL_EXCEPTION_REPORTS_PERSISTENCE_ENABLED`; disabling it stops new records. Operators own database access and retention: the package supplies no scheduled pruning policy.
 - Sensitive values are redacted and unsafe markup is stripped before queued delivery. Trace, IP address, user identity, and route parameters are off by default.
 - Route parameters are included only by exact allow-listed name. Enabling user identity, IP addresses, or traces can put personal data and application internals into email systems, incident channels, and their retention pipelines.
 - Webhooks require an HTTPS URL, an allow-listed public host that resolves only to public addresses, and a signing secret. Redirects are not followed. Webhook delivery runs inline with short connection/request timeouts rather than through the queue, so a slow incident endpoint can delay exception reporting by up to those configured limits.
