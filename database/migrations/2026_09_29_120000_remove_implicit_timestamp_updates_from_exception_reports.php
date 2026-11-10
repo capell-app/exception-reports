@@ -21,9 +21,9 @@ return new class extends Migration
             return;
         }
 
-        $tableName = Config::get('capell-exception-reports.persistence.table', 'exception_reports');
+        $tableName = $this->tableName($this->configuredTableName(Config::get('capell-exception-reports.persistence.table', 'exception_reports')));
         foreach ([
-            (is_string($tableName) && $tableName !== '' ? $tableName : 'exception_reports') => 'reported_at',
+            $tableName => 'reported_at',
         ] as $table => $name) {
             $this->dropImplicitTimestampUpdate($table, $name, $connection);
         }
@@ -110,5 +110,36 @@ return new class extends Migration
         );
 
         return $default;
+    }
+
+    // Frozen here so a published repair remains independent of package code.
+    private function tableName(string $base): string
+    {
+        if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/D', $base) !== 1) {
+            throw new InvalidArgumentException('Invalid base table name: ' . $base);
+        }
+
+        $aliases = Config::get('capell.database.table_aliases', []);
+        $alias = is_array($aliases) ? ($aliases[$base] ?? null) : null;
+        if ($alias !== null && ! is_string($alias)) {
+            throw new RuntimeException('Invalid database table alias for ' . $base);
+        }
+
+        $prefix = Config::get('capell.database.table_prefix', '');
+        if (! is_string($prefix)) {
+            throw new RuntimeException('Invalid database table prefix: capell.database.table_prefix must be a string.');
+        }
+
+        $name = $alias ?? $prefix . $base;
+        if (preg_match('/^[A-Za-z_][A-Za-z0-9_]{0,62}$/D', $name) !== 1) {
+            throw new RuntimeException('Invalid database table name: ' . $name);
+        }
+
+        return $name;
+    }
+
+    private function configuredTableName(mixed $value): string
+    {
+        return is_string($value) && $value !== '' ? $value : 'exception_reports';
     }
 };

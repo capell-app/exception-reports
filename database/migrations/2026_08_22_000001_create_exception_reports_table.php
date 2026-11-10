@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use Capell\Core\Support\TableName;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -12,7 +14,7 @@ return new class extends Migration
     {
         $tableName = $this->tableName();
 
-        if (Schema::hasTable($tableName)) {
+        if (TableName::externalExistsAndIsOwned($tableName, basename(__FILE__, '.php'))) {
             return;
         }
 
@@ -38,8 +40,6 @@ return new class extends Migration
 
     private function tableName(): string
     {
-        $table = config('capell-exception-reports.persistence.table', 'exception_reports');
-
-        return is_string($table) && $table !== '' ? $table : 'exception_reports';
+        return TableName::resolve(Config::string('capell-exception-reports.persistence.table', 'exception_reports'));
     }
 };

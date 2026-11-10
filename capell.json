@@ -20,7 +20,9 @@
         "conflicts": []
     },
     "providers": {
-        "metadata": [],
+        "metadata": [
+            "Capell\\ExceptionReports\\Providers\\MigrationMetadataServiceProvider"
+        ],
         "install": [],
         "runtime": [
             "Capell\\ExceptionReports\\Providers\\ExceptionReportsServiceProvider"
@@ -76,6 +78,8 @@
             "encryptedFields": [],
             "hashedTokenFields": [],
             "redactedOutputClasses": [
+                "Capell\\ExceptionReports\\Actions\\RecordExceptionReportAction",
+                "Capell\\ExceptionReports\\Actions\\ReportExceptionByEmailAction",
                 "Capell\\ExceptionReports\\Support\\ExceptionReportMailSanitizer"
             ],
             "plaintextJustifications": []
@@ -128,6 +132,22 @@
     "marketplace": {
         "summary": "Email and optional webhook alerting for unhandled Capell exceptions, with request, route, user, and stack-trace context sanitized for safe operator triage.",
         "description": "Exception Reports gives operators a direct email signal when a Capell app reports an unhandled exception, plus an optional signed webhook payload for approved HTTPS incident channels. Queue payloads are sanitized before dispatch and normally contain only exception metadata plus request method, route and route template. IP address, user identity, stack traces and route parameters are opt-in. Signature and global rate limits keep repeated failures from flooding the queue, with optional grouped digest emails for repeated suppressed signatures.",
+        "problem": "Unhandled errors can reach our visitors before our operators know there is a problem.",
+        "outcome": "Our operators receive configured exception reports for investigation.",
+        "faq": [
+            {
+                "question": "Where are exception recipients configured?",
+                "answer": "Recipients and delivery behaviour are configured at application level."
+            },
+            {
+                "question": "Is there an admin page for reports?",
+                "answer": "The package has no admin resource."
+            },
+            {
+                "question": "Which sensitive details are included by default?",
+                "answer": "Request secrets are sanitised; trace, identity, IP and route parameter details are opt-in."
+            }
+        ],
         "screenshots": [
             {
                 "path": "docs/assets/marketplace/extension-card.svg",

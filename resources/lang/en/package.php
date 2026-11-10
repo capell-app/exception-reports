@@ -37,8 +37,8 @@ return [
         ],
         'mail' => [
             'label' => 'Exception Reports: report email renders',
-            'ready' => 'The queued mailable, sanitizer, and Markdown view are available.',
-            'not_ready' => 'The queued mailable, sanitizer, or Markdown view is unavailable.',
+            'ready' => 'The queued mailable, sanitiser, and Markdown view are available.',
+            'not_ready' => 'The queued mailable, sanitiser, or Markdown view is unavailable.',
             'remediation' => 'Ensure package views and translations are loaded by ExceptionReportsServiceProvider.',
         ],
         'rate_limiter' => [

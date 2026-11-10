@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Capell\ExceptionReports\Models;
 
+use Capell\Core\Support\TableName;
 use Capell\ExceptionReports\Actions\ReportExceptionByEmailAction;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Override;
@@ -28,6 +31,9 @@ use Override;
  */
 final class ExceptionReport extends Model
 {
+    /** @use HasFactory<Factory<static>> */
+    use HasFactory;
+
     /**
      * @var list<string>
      */
@@ -57,6 +63,6 @@ final class ExceptionReport extends Model
     {
         $table = config('capell-exception-reports.persistence.table');
 
-        return is_string($table) && $table !== '' ? $table : parent::getTable();
+        return TableName::resolve(is_string($table) && $table !== '' ? $table : parent::getTable());
     }
 }

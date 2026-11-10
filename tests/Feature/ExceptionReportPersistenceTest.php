@@ -67,8 +67,8 @@ it('captures the request URL when an exception is reported from an HTTP request'
 
     $row = ExceptionReport::query()->sole();
 
-    expect($row->url)->toBe(url('/exception-report-persistence/abc'))
-        ->and($row->url)->not->toContain('query-secret')
+    expect($row->url)->toBe(url('/exception-report-persistence/{token}'))
+        ->and($row->url)->not->toContain('abc', 'query-secret')
         ->and($row->job_class)->toBeNull();
 });
 

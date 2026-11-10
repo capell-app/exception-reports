@@ -167,6 +167,11 @@ final class ExceptionReportMailSanitizer
             return $value === '' || $value === 'n/a' ? $value : self::REDACTED;
         }
 
+        // Arbitrary URL path segments can carry bearer credentials even when
+        // nothing names them as secrets; keep the host for diagnosis and let the
+        // query string fall through to the named-value redaction below.
+        $value = preg_replace('~(https?://[^/\s?#]+)(?:/[^\s?#]*)?~i', '$1/' . self::REDACTED, $value) ?? '';
+
         $value = preg_replace(
             '/\b(Bearer|Basic)\s+[A-Za-z0-9._~+\/=-]+/i',
             '$1 ' . self::REDACTED,

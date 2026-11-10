@@ -1,0 +1,12 @@
+{
+    "create_exception_reports_table": {
+        "names": [
+            "2026_08_22_000001_create_exception_reports_table"
+        ],
+        "sha256": [
+            "21781f98912029cf4e0c6f6f54597324b5617c6c9b34b2b8118015c61e47ce92",
+            "3f0cd2a647d84418f93096ae23ec1d9d7974e0787cec5b04d47bd85139ec26a2",
+            "cfc75a7ed4ecc43f40827b7f813d53a582ad913c06b3f45974afd2226cc4cbd7"
+        ]
+    }
+}

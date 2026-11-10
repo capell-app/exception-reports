@@ -9,6 +9,7 @@ use Capell\ExceptionReports\Support\ExceptionReportMailSanitizer;
 use Illuminate\Contracts\Queue\Job as QueueJob;
 use Illuminate\Http\Request;
 use Illuminate\Queue\Worker;
+use Illuminate\Routing\Route;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsFake;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -61,15 +62,14 @@ final class RecordExceptionReportAction
             return null;
         }
 
-        $url = $request->url();
+        // Persist the matched route template rather than the concrete URL: path
+        // parameters such as calendar or preference tokens must not outlive the
+        // request in a durable report.
+        // The stored value carries only the host and the route template, never a
+        // path parameter or query value, so it needs no further redaction.
+        $route = $request->route();
 
-        if ($url === '') {
-            return null;
-        }
-
-        $sanitized = $this->sanitizer()->sanitizeLogContext(['url' => $url])['url'] ?? $url;
-
-        return is_string($sanitized) ? $sanitized : null;
+        return $request->getSchemeAndHttpHost() . '/' . ($route instanceof Route ? ltrim($route->uri(), '/') : '[redacted]');
     }
 
     /**

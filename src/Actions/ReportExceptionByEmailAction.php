@@ -98,7 +98,7 @@ final class ReportExceptionByEmailAction
 
         $requestContext = [
             'method' => $request?->method(),
-            'path' => $route?->uri() ?? $request?->path(),
+            'path' => $route?->uri() ?? ($request instanceof Request ? '[redacted]' : null),
             'route_name' => $route?->getName(),
             'route_parameters' => $this->routeParameters($route),
         ];
@@ -156,7 +156,7 @@ final class ReportExceptionByEmailAction
         }
 
         if ($request instanceof Request && $request->path() !== '/') {
-            return 'path: ' . $request->path();
+            return 'path: [redacted]';
         }
 
         $commandName = $this->consoleCommandName();

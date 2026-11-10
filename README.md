@@ -2,95 +2,43 @@
 
 <!-- prettier-ignore-start -->
 
-## What This Plugin Adds
-
-Exception Reports is an **Available**, **Schema-owning** Capell package in the **Capell Operations** product group. It ships as `capell-app/exception-reports` and extends these surfaces: console, shared.
+## What It Does
 
 Exception Reports queues sanitized unhandled-exception reports to configured email recipients and optional signed webhook endpoints, with rate limiting and grouped digests.
 
-Operators receive a sanitized email or webhook payload for triage. The package has no admin resource; recipients, privacy options, and delivery behavior are configured at application level.
+- **Price and availability:** Check current availability and price on the [Capell Marketplace listing](https://capell.app/extensions/exception-reports).
+- **Licence:** Check the licence terms on the [Capell Marketplace listing](https://capell.app/extensions/exception-reports).
+- **Requires:** `PHP ^8.4`, `capell-app/core ^1.0.75`, `laravel/framework ^12.61.1|^13.12.0`, `lorisleiva/laravel-actions ^2.8`, `spatie/laravel-package-tools ^1.14.1`.
+- **Install:** `composer require capell-app/exception-reports`.
 
-Status details:
+Operators receive a sanitized email or webhook payload for triage. The package has no admin resource; recipients, privacy options, and delivery behaviour are configured at application level.
 
-- Status: Available
-- Tier: free
-- Bundle: operations
-- Composer package: `capell-app/exception-reports`
-- Namespace: `Capell\ExceptionReports`
-- Theme key: not applicable
-
-## Why It Matters
+## Who It Is For
 
 **For developers:** A typed report boundary and sanitizer keep request secrets out of queued payloads, while trace, identity, IP, and route-parameter details remain opt-in.
 
-**For teams:** Operational failures reach the configured owner with enough context to start triage, and repeated signatures can be rate limited or summarized instead of producing duplicate alerts.
+**For teams:** Operational failures reach the configured owner with enough context to start triage, and repeated signatures can be rate limited or summarised instead of producing duplicate alerts.
+
+## Quick Start
+
+1. Install the package: `composer require capell-app/exception-reports`.
+2. Verify the package provider and manifest contributions are registered in the host app.
+
+## Configure
+
+- **Configuration files:** `config/capell-exception-reports.php`.
+
+## Limits And Pitfalls
+
+- Install the required Capell packages at the versions in `composer.json`: `capell-app/core ^1.0.75`.
+- Run migrations before opening package resources or public routes.
 
 ## Screens And Workflow
 
-Screenshot contract: `docs/screenshots.json`.
-
 ![Exception Reports extension preview image](docs/assets/marketplace/extension-card.svg)
 
-- Exception Reports extension card (marketplace, supplementary documentation fixture).
-- Illustrative exception reports rendered email preview preview (frontend, supplementary documentation fixture).
-
-## Technical Shape
-
-### Service providers
-
-- `Capell\ExceptionReports\Providers\ExceptionReportsServiceProvider`
-
-### Config files
-
-- `packages/exception-reports/config/capell-exception-reports.php`
-
-### Migrations
-
-- `packages/exception-reports/database/migrations/2026_08_22_000001_create_exception_reports_table.php`
-- `packages/exception-reports/database/migrations/2026_09_29_120000_remove_implicit_timestamp_updates_from_exception_reports.php`
-
-### Models
-
-- `ExceptionReport`
-
-### Actions
-
-- `QueueRateLimitedExceptionDigestAction`
-- `RecordExceptionReportAction`
-- `ReportExceptionByEmailAction`
-- `SendExceptionReportWebhookAction`
-
-### Data objects
-
-- `ExceptionReportData`
-- `ResolvedExceptionReportWebhookEndpointData`
-
-### Manifest action API
-
-- `recordExceptionReport: Capell\ExceptionReports\Actions\RecordExceptionReportAction`
-- `reportExceptionByEmail: Capell\ExceptionReports\Actions\ReportExceptionByEmailAction`
-
-### Manifest contributions
-
-- `health-check: Capell\ExceptionReports\Health\ExceptionReportsHealthCheck`
-- `migration: Capell\ExceptionReports\Manifest\ExceptionReportsMigrationsContribution`
-
-### Health checks
-
-- `Capell\ExceptionReports\Health\ExceptionReportsHealthCheck`
-
-### Blade views
-
-- `packages/exception-reports/resources/views/mail/reported.blade.php`
-
-
-## Data Model
-
-- Required tables: `exception_reports`.
-- Models: `ExceptionReport`.
-- Migration files: `2026_08_22_000001_create_exception_reports_table.php`, `2026_09_29_120000_remove_implicit_timestamp_updates_from_exception_reports.php`.
-- Migration impact: run host migrations through the package install flow before opening package surfaces.
-- Deletion/retention behaviour: Docs gap: migrations and manifest contributions do not prove a cascade, pruning command, or timed retention policy.
+- Exception Reports extension card (marketplace).
+- Illustrative exception reports rendered email preview preview (frontend).
 
 ## Install Impact
 
@@ -106,12 +54,6 @@ Screenshot contract: `docs/screenshots.json`.
 - Cache tags: none declared.
 - Commands: none declared.
 
-## Common Pitfalls
-
-- Keep required Capell packages on compatible v4 releases: `capell-app/core`.
-- Run migrations before opening package resources or public routes.
-- Review package configuration before production-like verification: `config/capell-exception-reports.php`.
-
 ## Troubleshooting
 
 | Symptom | Likely cause | Check | Fix |
@@ -119,14 +61,11 @@ Screenshot contract: `docs/screenshots.json`.
 | Package surface is missing after install | Provider or manifest is not loaded | Confirm `capell.json`, package `composer.json`, and provider registration | Reinstall the package, refresh Composer autoload, and clear host caches |
 | Admin screen or command fails on missing table | Package migrations have not run | Check the tables listed in `Data Model` | Run host migrations and rerun the focused package test |
 
-## Quick Start
-
-1. Install the package: `composer require capell-app/exception-reports`.
-2. Verify the package provider and manifest contributions are registered in the host app.
-
 ## Upgrading
 
 No manual steps between minor versions.
+
+Read [CHANGELOG.md](CHANGELOG.md) before upgrading.
 
 ## Next Steps
 
@@ -137,7 +76,7 @@ No manual steps between minor versions.
 - [Admin guide](docs/admin-guide.md)
 - Configuration files: [`config/capell-exception-reports.php`](config/capell-exception-reports.php).
 - [Troubleshooting](#troubleshooting)
-- [Screenshot contract](docs/screenshots.json)
+- [Developer reference](docs/reference.md)
 - [Marketplace assets](docs/assets/marketplace/)
 - [Capell content language plan](../../docs/CONTENT_LANGUAGE_PLAN.md)
 - [Capell documentation design system](../../docs/DESIGN_SYSTEM.md)
