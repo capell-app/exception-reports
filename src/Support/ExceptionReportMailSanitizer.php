@@ -178,11 +178,7 @@ final class ExceptionReportMailSanitizer
             $value,
         ) ?? '';
 
-        $value = preg_replace(
-            '/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i',
-            '[redacted-email]',
-            $value,
-        ) ?? '';
+        $value = $this->redactEmailAddresses($value);
 
         $value = preg_replace(
             '/(?<=[?&;\s])((?:api[_-]?key|access[_-]?key|private[_-]?key|password|passwd|secret|session|signature|token)=)[^&;\s]+/i',
@@ -195,6 +191,48 @@ final class ExceptionReportMailSanitizer
             '$1' . self::REDACTED,
             $value,
         ) ?? '';
+    }
+
+    /**
+     * Any local-part@host address, however it is written: accented and non-Latin addresses,
+     * internationalised and single-label hosts, quoted local parts, IP-literal and dotted-IP hosts,
+     * JSON \uXXXX escapes, and the @ percent-encoded (%40, %2540), as an HTML entity, escaped with
+     * a backslash, as \u0040, or as a full-width or small form. A host name must contain a letter, so a version
+     * constraint such as core@1.0 stays readable. Every repetition is bounded or possessive and each
+     * start is anchored by a lookbehind, so the scan stays linear, and the replacement contains no separator, so a second
+     * pass changes nothing. Text that is not valid UTF-8 cannot be searched with the Unicode
+     * pattern; it is withheld rather than sent unscanned.
+     */
+    private function redactEmailAddresses(string $value): string
+    {
+        $escape = '\\\\u[0-9A-Fa-f]{4}';
+        // Repetitions are possessive: none needs to give characters back, and a backtracking
+        // repetition over a long run exhausts the PCRE JIT stack. A local part therefore cannot
+        // contain % or the @ escape, which would swallow an encoded separator.
+        $localChar = '(?:[\p{L}\p{M}\p{N}._+-]|\\\\u(?!0040)[0-9A-Fa-f]{4})';
+        $local = '(?:"[^"\\\\\r\n]{1,64}"|' . $localChar . '++)';
+        $separator = '(?:@|%(?:25)?40|\x{FF20}|\x{FE6B}|&\#0*64;|&\#[xX]0*40;|&commat;|\\\\@|\\\\u0040)';
+        $label = '(?:[\p{L}\p{M}\p{N}]|' . $escape . ')(?:[\p{L}\p{M}\p{N}-]|' . $escape . ')*+';
+        // The first host character that is not a digit, dot or hyphen must be a letter.
+        $namedHost = '(?=[\p{N}.-]*+(?:\p{L}|\p{M}|\\\\u))' . $label . '(?:\.' . $label . ')*+';
+        $ipHost = '\[[0-9A-Za-z:.]{2,64}\]|\d{1,3}(?:\.\d{1,3}){3}(?!\d)';
+
+        $redacted = preg_replace(
+            '/(?<![\p{L}\p{M}\p{N}._+-])' . $local . $separator . '(?:' . $ipHost . '|' . $namedHost . ')/u',
+            '[redacted-email]',
+            $value,
+        );
+
+        if (! is_string($redacted)) {
+            return self::REDACTED;
+        }
+
+        // A query value under an address-like key is the person's address whatever its encoding.
+        return preg_replace(
+            '/(?<=[?&;\s])((?:e-?mail(?:[_-]?address)?|mail)=)[^&;\s`\'"]+/i',
+            '$1' . self::REDACTED,
+            $redacted,
+        ) ?? self::REDACTED;
     }
 
     private function isSensitivePath(string $path): bool

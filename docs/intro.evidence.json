@@ -1,0 +1,88 @@
+[
+    {
+        "claim": "It reacts to unhandled exceptions that Laravel reports, through a reportable hook on the exception handler.",
+        "evidence": [
+            "src/Providers/ExceptionReportsServiceProvider.php",
+            "src/Actions/ReportExceptionByEmailAction.php"
+        ]
+    },
+    {
+        "claim": "A crash queues an email to you (delivery depends on the queue and mail setup).",
+        "evidence": [
+            "src/Actions/ReportExceptionByEmailAction.php",
+            "src/Mail/UnhandledExceptionReported.php"
+        ]
+    },
+    {
+        "claim": "The email goes to MAIL_FROM_ADDRESS unless a developer sets EXCEPTION_REPORT_RECIPIENT, and there is no admin setting for it.",
+        "evidence": [
+            "config/capell-exception-reports.php",
+            "src/Actions/ReportExceptionByEmailAction.php",
+            "capell.json"
+        ]
+    },
+    {
+        "claim": "There is no page of errors and no way to mark one resolved (no Filament classes, no admin surface in the manifest).",
+        "evidence": [
+            "capell.json",
+            "src/Providers/ExceptionReportsServiceProvider.php"
+        ]
+    },
+    {
+        "claim": "Each exception is also saved as a small database record (class, scrubbed message, job, URL, time) that the admin does not show, with persistence on by default. A daily scheduled prune, which runs only if the server's scheduler is running, deletes records older than 30 days by default, and a retention of 0 days keeps them forever",
+        "evidence": [
+            "src/Actions/RecordExceptionReportAction.php",
+            "src/Models/ExceptionReport.php",
+            "database/migrations/2026_08_22_000001_create_exception_reports_table.php",
+            "config/capell-exception-reports.php",
+            "src/Providers/ExceptionReportsServiceProvider.php",
+            "src/Console/Commands/PruneExceptionReportsCommand.php",
+            "src/Manifest/ExceptionReportsPruneScheduleContribution.php"
+        ]
+    },
+    {
+        "claim": "If a developer enables it, the same report goes to a webhook at an approved HTTPS host, off by default.",
+        "evidence": [
+            "config/capell-exception-reports.php",
+            "src/Actions/SendExceptionReportWebhookAction.php"
+        ]
+    },
+    {
+        "claim": "By default identical errors send one email per 15 minutes and no more than ten go out per hour in total.",
+        "evidence": [
+            "config/capell-exception-reports.php",
+            "src/Actions/ReportExceptionByEmailAction.php",
+            "src/Support/ExceptionSignature.php"
+        ]
+    },
+    {
+        "claim": "Anything held back is still saved but not emailed (the record is written before the throttle, and the digest is off by default).",
+        "evidence": [
+            "src/Actions/ReportExceptionByEmailAction.php",
+            "src/Actions/QueueRateLimitedExceptionDigestAction.php",
+            "config/capell-exception-reports.php"
+        ]
+    },
+    {
+        "claim": "Each email names the error, the file and line, and the environment.",
+        "evidence": [
+            "src/Actions/ReportExceptionByEmailAction.php",
+            "resources/views/mail/reported.blade.php",
+            "resources/lang/en/mail.php"
+        ]
+    },
+    {
+        "claim": "It names the page or command by its route name, action or command name, not the visited address, which is redacted.",
+        "evidence": [
+            "src/Actions/ReportExceptionByEmailAction.php",
+            "resources/views/mail/reported.blade.php"
+        ]
+    },
+    {
+        "claim": "The subject line carries the app name, the error type and that page or command.",
+        "evidence": [
+            "src/Actions/ReportExceptionByEmailAction.php",
+            "src/Mail/UnhandledExceptionReported.php"
+        ]
+    }
+]

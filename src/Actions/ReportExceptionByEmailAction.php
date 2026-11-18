@@ -7,6 +7,8 @@ namespace Capell\ExceptionReports\Actions;
 use Capell\ExceptionReports\Data\ExceptionReportData;
 use Capell\ExceptionReports\Mail\UnhandledExceptionReported;
 use Capell\ExceptionReports\Support\ExceptionReportMailSanitizer;
+use Capell\ExceptionReports\Support\ExceptionReportMessage;
+use Capell\ExceptionReports\Support\ExceptionSignature;
 use Capell\ExceptionReports\Support\InactivePostmarkRecipientFailure;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
@@ -114,7 +116,7 @@ final class ReportExceptionByEmailAction
                 'app' => config('app.name'),
                 'environment' => app()->environment(),
                 'exception' => $exception::class,
-                'message' => Str::limit($exception->getMessage(), 500, '...'),
+                'message' => ExceptionReportMessage::of($exception, 500),
                 'file' => basename($exception->getFile()),
                 'line' => $exception->getLine(),
                 'reported_at' => now()->toDayDateTimeString(),
@@ -122,7 +124,7 @@ final class ReportExceptionByEmailAction
             'request' => $requestContext,
             'console' => $this->consoleContext(),
             'user' => $this->userContext($user),
-            'trace' => $this->includeTrace() ? $exception->getTraceAsString() : '',
+            'trace' => $this->includeTrace() ? ExceptionReportMessage::traceOf($exception) : '',
         ];
 
         $safeReport = resolve(ExceptionReportMailSanitizer::class)->sanitize($report);
@@ -222,24 +224,16 @@ final class ReportExceptionByEmailAction
         $signatureAttempts = $this->positiveIntegerConfig('capell-exception-reports.rate_limits.signature_attempts', 1);
         $globalAttempts = $this->positiveIntegerConfig('capell-exception-reports.rate_limits.global_attempts', 10);
 
-        if (RateLimiter::tooManyAttempts($signatureKey, $signatureAttempts) || RateLimiter::tooManyAttempts($globalKey, $globalAttempts)) {
+        if (RateLimiter::hit($signatureKey, $this->positiveIntegerConfig('capell-exception-reports.rate_limits.signature_decay_seconds', 60 * 15)) > $signatureAttempts) {
             return false;
         }
 
-        RateLimiter::hit($signatureKey, $this->positiveIntegerConfig('capell-exception-reports.rate_limits.signature_decay_seconds', 60 * 15));
-        RateLimiter::hit($globalKey, $this->positiveIntegerConfig('capell-exception-reports.rate_limits.global_decay_seconds', 60 * 60));
-
-        return true;
+        return RateLimiter::hit($globalKey, $this->positiveIntegerConfig('capell-exception-reports.rate_limits.global_decay_seconds', 60 * 60)) <= $globalAttempts;
     }
 
     private function signature(Throwable $exception): string
     {
-        return hash('sha256', implode('|', [
-            $exception::class,
-            $exception->getMessage(),
-            $exception->getFile(),
-            $exception->getLine(),
-        ]));
+        return ExceptionSignature::for($exception);
     }
 
     private function recipient(): ?string
@@ -379,9 +373,9 @@ final class ReportExceptionByEmailAction
                 'Exception Reports failed to queue an exception email.',
                 resolve(ExceptionReportMailSanitizer::class)->sanitizeLogContext([
                     'reporter_exception' => $reporterFailure::class,
-                    'reporter_message' => Str::limit($reporterFailure->getMessage(), 500, '...'),
+                    'reporter_message' => ExceptionReportMessage::of($reporterFailure, 500),
                     'original_exception' => $originalException::class,
-                    'original_message' => Str::limit($originalException->getMessage(), 500, '...'),
+                    'original_message' => ExceptionReportMessage::of($originalException, 500),
                     'original_file' => $originalException->getFile(),
                     'original_line' => $originalException->getLine(),
                 ]),
@@ -398,9 +392,9 @@ final class ReportExceptionByEmailAction
                 'Exception Reports failed to persist an exception report.',
                 resolve(ExceptionReportMailSanitizer::class)->sanitizeLogContext([
                     'reporter_exception' => $recordingFailure::class,
-                    'reporter_message' => Str::limit($recordingFailure->getMessage(), 500, '...'),
+                    'reporter_message' => ExceptionReportMessage::of($recordingFailure, 500),
                     'original_exception' => $originalException::class,
-                    'original_message' => Str::limit($originalException->getMessage(), 500, '...'),
+                    'original_message' => ExceptionReportMessage::of($originalException, 500),
                     'original_file' => $originalException->getFile(),
                     'original_line' => $originalException->getLine(),
                 ]),

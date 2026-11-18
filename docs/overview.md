@@ -2,6 +2,14 @@
 
 <!-- prettier-ignore-start -->
 
+The client rings to say the checkout page is broken, and it's the first you've heard of it. With this, a crash on your site emails you, usually before the phone rings. It reacts to unhandled exceptions, errors the site didn't deal with, that Laravel (the framework behind Capell) reports.
+
+The email goes to your site's sending address, and picking another needs a developer because the admin has no setting for it. There's no page of errors or way to mark one resolved. Each exception is also saved as a small database record, hidden from the admin and deleted after 30 days by default, if your server's scheduler is running. A retention of 0 in server settings keeps them forever. If a developer sets one up, the same report can go to a webhook, an approved web address for your own tools.
+
+By default, identical errors send one email every 15 minutes, and at most ten emails go out an hour. Anything held back is saved but not emailed.
+
+Each email names the error, the file and line, and the environment. It names the page or command by its internal name, not its web address. The subject line carries your app name, the error type and that page or command, so you know where the trouble is before opening it.
+
 ## What it does for you
 
 Exception Reports registers with Laravel's exception handler and queues a sanitized email when an unhandled exception is reported. It can also, when explicitly enabled, send a signed payload to an approved HTTPS webhook endpoint. By default it also stores a minimal sanitised database record independently of delivery. It does not add an admin inbox.
@@ -31,7 +39,7 @@ There is no Exception Reports admin page. A developer configures `config/capell-
 ## Good to know
 
 - The database record is durable exception evidence, including when mail is absent or rate-limited. It is not a delivery receipt or replay queue. Use the [investigation recipe](admin-guide.md#how-to-investigate-without-an-email) through authorised database or Artisan access; keep a separate monitoring system for richer incident search and alerting.
-- Persistence defaults on through `CAPELL_EXCEPTION_REPORTS_PERSISTENCE_ENABLED`; disabling it stops new records. Operators own database access and retention: the package supplies no scheduled pruning policy.
+- Persistence defaults on through `CAPELL_EXCEPTION_REPORTS_PERSISTENCE_ENABLED`; disabling it stops new records. The package schedules `capell:exception-reports-prune` daily (without overlapping, on one server), which deletes reports older than `CAPELL_EXCEPTION_REPORTS_RETENTION_DAYS` (30 by default; `0` keeps them all). It needs the host Laravel scheduler running. Operators still own database access and backups.
 - Sensitive values are redacted and unsafe markup is stripped before queued delivery. Trace, IP address, user identity, and route parameters are off by default.
 - Route parameters are included only by exact allow-listed name. Enabling user identity, IP addresses, or traces can put personal data and application internals into email systems, incident channels, and their retention pipelines.
 - Webhooks require an HTTPS URL, an allow-listed public host that resolves only to public addresses, and a signing secret. Redirects are not followed. Webhook delivery runs inline with short connection/request timeouts rather than through the queue, so a slow incident endpoint can delay exception reporting by up to those configured limits.

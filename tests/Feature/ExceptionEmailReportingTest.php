@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Capell\Core\Contracts\Security\ResolvesHostAddresses;
 use Capell\ExceptionReports\Actions\QueueRateLimitedExceptionDigestAction;
 use Capell\ExceptionReports\Actions\ReportExceptionByEmailAction;
 use Capell\ExceptionReports\Actions\SendExceptionReportWebhookAction;
@@ -393,6 +394,31 @@ it('refuses unapproved or unsigned webhook destinations before sending', functio
     Http::assertNothingSent();
 });
 
+it('refuses approved webhook hosts that are internal addresses PHP treats as public', function (string $host): void {
+    Http::fake();
+    config()->set('capell-exception-reports.webhook.allowed_hosts', [$host]);
+    config()->set('capell-exception-reports.webhook.signing_secret', 'webhook-secret');
+
+    SendExceptionReportWebhookAction::run(
+        'https://' . $host . '/exception-reports',
+        ExceptionReportData::from([
+            'subject' => '[Capell] RuntimeException',
+            'source' => 'route: webhook.test',
+            'summary' => ['exception' => RuntimeException::class, 'message' => 'Webhook test'],
+            'request' => [],
+            'console' => null,
+            'user' => null,
+            'trace' => '',
+        ]),
+        new RuntimeException('Webhook action failure'),
+    );
+
+    Http::assertNothingSent();
+})->with([
+    'carrier-grade NAT' => '100.64.0.10',
+    'benchmarking range' => '198.18.0.10',
+]);
+
 it('can deliver webhook reports when no email recipient is configured', function (): void {
     Mail::fake();
     Http::fake([
@@ -417,7 +443,7 @@ it('never masks cache binding failures', function (): void {
     Mail::fake();
     $log = Log::spy();
 
-    RateLimiter::shouldReceive('tooManyAttempts')
+    RateLimiter::shouldReceive('hit')
         ->once()
         ->andThrow(new BindingResolutionException('Target class [cache.store] does not exist. token=cache-secret'));
 
@@ -464,7 +490,7 @@ it('does not recurse when reporter failure logging fails', function (): void {
         ->once()
         ->andThrow(new RuntimeException('Logger failed token=logger-secret'));
 
-    RateLimiter::shouldReceive('tooManyAttempts')
+    RateLimiter::shouldReceive('hit')
         ->once()
         ->andThrow(new BindingResolutionException('Target class [cache.store] does not exist. token=cache-secret'));
 
@@ -721,9 +747,84 @@ it('globally caps exception report emails', function (): void {
     config()->set('capell-exception-reports.rate_limits.enabled', true);
     Mail::fake();
 
-    foreach (range(1, 11) as $attempt) {
-        ReportExceptionByEmailAction::run(new RuntimeException('Failure ' . $attempt));
+    foreach (range('a', 'k') as $letter) {
+        ReportExceptionByEmailAction::run(new RuntimeException('Failure kind ' . $letter));
     }
 
     Mail::assertQueued(UnhandledExceptionReported::class, 10);
 });
+
+it('resolves approved webhook hosts through Core and refuses one that rebinds to an internal address', function (string $address, bool $sent): void {
+    app()->instance(ResolvesHostAddresses::class, new class($address) implements ResolvesHostAddresses
+    {
+        public function __construct(private readonly string $address) {}
+
+        public function resolve(string $host): array
+        {
+            return [$this->address];
+        }
+    });
+    Http::fake(['https://hooks.capell.test/*' => Http::response(['ok' => true])]);
+    config()->set('capell-exception-reports.webhook.allowed_hosts', ['hooks.capell.test']);
+    config()->set('capell-exception-reports.webhook.signing_secret', 'webhook-secret');
+
+    SendExceptionReportWebhookAction::run(
+        'https://hooks.capell.test/exception-reports',
+        ExceptionReportData::from([
+            'subject' => '[Capell] RuntimeException',
+            'source' => 'route: webhook.test',
+            'summary' => ['exception' => RuntimeException::class, 'message' => 'Webhook test'],
+            'request' => [],
+            'console' => null,
+            'user' => null,
+            'trace' => '',
+        ]),
+        new RuntimeException('Webhook action failure'),
+    );
+
+    $sent ? Http::assertSentCount(1) : Http::assertNothingSent();
+})->with([
+    'public address' => ['93.184.216.34', true],
+    'rebound to loopback' => ['127.0.0.1', false],
+    'rebound to metadata service' => ['169.254.169.254', false],
+]);
+
+it('signs webhooks sent to a custom port and refuses hosts that only match the allowlist once trimmed', function (string $url, bool $sent): void {
+    app()->instance(ResolvesHostAddresses::class, new class implements ResolvesHostAddresses
+    {
+        public function resolve(string $host): array
+        {
+            return ['93.184.216.34'];
+        }
+    });
+    Http::fake(['*' => Http::response(['ok' => true])]);
+    config()->set('capell-exception-reports.webhook.allowed_hosts', ['hooks.capell.test']);
+    config()->set('capell-exception-reports.webhook.signing_secret', 'webhook-secret');
+
+    SendExceptionReportWebhookAction::run(
+        $url,
+        ExceptionReportData::from([
+            'subject' => '[Capell] RuntimeException',
+            'source' => 'route: webhook.test',
+            'summary' => ['exception' => RuntimeException::class, 'message' => 'Webhook test'],
+            'request' => [],
+            'console' => null,
+            'user' => null,
+            'trace' => '',
+        ]),
+        new RuntimeException('Webhook action failure'),
+    );
+
+    if (! $sent) {
+        Http::assertNothingSent();
+
+        return;
+    }
+
+    Http::assertSent(static fn (HttpClientRequest $request): bool => $request->url() === $url
+        && str_starts_with((string) $request->header('X-Capell-Signature')[0], 'sha256='));
+})->with([
+    'custom port' => ['https://hooks.capell.test:8443/exception-reports', true],
+    'trailing dot' => ['https://hooks.capell.test./exception-reports', false],
+    'leading dot' => ['https://.hooks.capell.test/exception-reports', false],
+]);

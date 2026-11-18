@@ -6,7 +6,7 @@ Developer reference for `capell-app/exception-reports`. Start with the [README](
 
 ## Package Details
 
-Exception Reports is an **Available**, **Schema-owning** Capell package in the **Capell Operations** product group. It ships as `capell-app/exception-reports` and extends these surfaces: console, shared.
+Exception Reports is an **Available** Capell package in the **Capell Operations** product group. It ships as `capell-app/exception-reports` and extends these surfaces: console, shared.
 
 - Status: Available
 - Tier: free
@@ -45,17 +45,30 @@ Exception Reports is an **Available**, **Schema-owning** Capell package in the *
 ### Data objects
 
 - `ExceptionReportData`
-- `ResolvedExceptionReportWebhookEndpointData`
+
+### Command signatures
+
+- `capell:exception-reports-prune`
 
 ### Manifest action API
 
 - `recordExceptionReport: Capell\ExceptionReports\Actions\RecordExceptionReportAction`
 - `reportExceptionByEmail: Capell\ExceptionReports\Actions\ReportExceptionByEmailAction`
 
+### Scheduled commands
+
+- `capell:exception-reports-prune (daily; package registered)`
+
+### Console command classes
+
+- `PruneExceptionReportsCommand`
+
 ### Manifest contributions
 
+- `console-command: Capell\ExceptionReports\Manifest\ExceptionReportsConsoleCommandsContribution`
 - `health-check: Capell\ExceptionReports\Health\ExceptionReportsHealthCheck`
 - `migration: Capell\ExceptionReports\Manifest\ExceptionReportsMigrationsContribution`
+- `scheduled-job: Capell\ExceptionReports\Manifest\ExceptionReportsPruneScheduleContribution`
 
 ### Health checks
 
@@ -72,6 +85,6 @@ Exception Reports is an **Available**, **Schema-owning** Capell package in the *
 - Models: `ExceptionReport`.
 - Migration files: `2026_08_22_000001_create_exception_reports_table.php`, `2026_09_29_120000_remove_implicit_timestamp_updates_from_exception_reports.php`.
 - Migration impact: run host migrations through the package install flow before opening package surfaces.
-- Deletion/retention behaviour: Docs gap: migrations and manifest contributions do not prove a cascade, pruning command, or timed retention policy.
+- Deletion/retention behaviour: retention is scheduled through `capell:exception-reports-prune` (daily; registered by the package provider).
 
 <!-- prettier-ignore-end -->

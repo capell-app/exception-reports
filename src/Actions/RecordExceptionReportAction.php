@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace Capell\ExceptionReports\Actions;
 
 use Capell\ExceptionReports\Models\ExceptionReport;
-use Capell\ExceptionReports\Support\ExceptionReportMailSanitizer;
+use Capell\ExceptionReports\Support\ExceptionReportMessage;
 use Illuminate\Contracts\Queue\Job as QueueJob;
 use Illuminate\Http\Request;
 use Illuminate\Queue\Worker;
 use Illuminate\Routing\Route;
-use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsFake;
 use Lorisleiva\Actions\Concerns\AsObject;
 use Throwable;
@@ -46,10 +45,7 @@ final class RecordExceptionReportAction
 
     private function sanitizedMessage(Throwable $exception): string
     {
-        $message = Str::limit($exception->getMessage(), 2000, '...');
-        $sanitized = $this->sanitizer()->sanitizeLogContext(['message' => $message])['message'] ?? $message;
-
-        return is_string($sanitized) ? $sanitized : $message;
+        return ExceptionReportMessage::of($exception, 2000);
     }
 
     private function sanitizedUrl(?Request $request): ?string
@@ -93,10 +89,5 @@ final class RecordExceptionReportAction
         }
 
         return $worker->currentJob instanceof QueueJob ? $worker->currentJob : null;
-    }
-
-    private function sanitizer(): ExceptionReportMailSanitizer
-    {
-        return resolve(ExceptionReportMailSanitizer::class);
     }
 }

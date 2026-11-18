@@ -48,5 +48,6 @@ return [
     'persistence' => [
         'enabled' => filter_var(env('CAPELL_EXCEPTION_REPORTS_PERSISTENCE_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
         'table' => env('CAPELL_EXCEPTION_REPORTS_PERSISTENCE_TABLE', 'exception_reports'),
+        'retention_days' => is_numeric(env('CAPELL_EXCEPTION_REPORTS_RETENTION_DAYS')) ? (int) env('CAPELL_EXCEPTION_REPORTS_RETENTION_DAYS') : 30,
     ],
 ];

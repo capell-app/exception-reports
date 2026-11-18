@@ -7,6 +7,7 @@ namespace Capell\ExceptionReports\Actions;
 use Capell\ExceptionReports\Data\ExceptionReportData;
 use Capell\ExceptionReports\Mail\UnhandledExceptionReported;
 use Capell\ExceptionReports\Support\ExceptionReportMailSanitizer;
+use Capell\ExceptionReports\Support\ExceptionSignature;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -63,12 +64,7 @@ final class QueueRateLimitedExceptionDigestAction
 
     private function signature(Throwable $exception): string
     {
-        return hash('sha256', implode('|', [
-            $exception::class,
-            $exception->getMessage(),
-            $exception->getFile(),
-            $exception->getLine(),
-        ]));
+        return ExceptionSignature::for($exception);
     }
 
     private function appName(): string

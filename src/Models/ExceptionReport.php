@@ -6,8 +6,10 @@ namespace Capell\ExceptionReports\Models;
 
 use Capell\Core\Support\TableName;
 use Capell\ExceptionReports\Actions\ReportExceptionByEmailAction;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Override;
@@ -34,6 +36,8 @@ final class ExceptionReport extends Model
     /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
+    use MassPrunable;
+
     /**
      * @var list<string>
      */
@@ -45,6 +49,22 @@ final class ExceptionReport extends Model
         'url',
         'reported_at',
     ];
+
+    /**
+     * Rows older than the retention window are pruned by `model:prune`; a
+     * retention of 0 days keeps reports indefinitely.
+     *
+     * @return Builder<static>
+     */
+    public function prunable(): Builder
+    {
+        $configured = config('capell-exception-reports.persistence.retention_days', 30);
+        $days = is_numeric($configured) ? (int) $configured : 30;
+
+        return self::query()
+            ->when($days <= 0, fn (Builder $query): Builder => $query->whereRaw('1 = 0'))
+            ->where('reported_at', '<', now()->subDays(max(1, $days)));
+    }
 
     /**
      * @return array<string, string>

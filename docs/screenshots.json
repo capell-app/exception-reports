@@ -21,17 +21,20 @@
         },
         {
             "id": "exception-reports-email-preview",
-            "title": "Illustrative exception reports rendered email preview preview.",
+            "colorSchemes": ["light"],
+            "title": "Exception report email rendered from the package mailable.",
             "package": "exception-reports",
             "surface": "frontend",
-            "targetType": "artifact",
-            "target": "exception-reports-email-preview",
-            "required": false,
-            "path": "docs/screenshots/exception-email-preview.png",
-            "notes": "Diagnostic-only static preview. It is excluded from documentation, release, Marketplace, and promotional evidence until a package-owned rendered mailable fixture is captured by the shared runner.",
+            "targetType": "frontend-url",
+            "target": "/screenshot-fixtures/exception-reports/email",
+            "required": true,
+            "notes": "The workbench fixture renders the package's own exception report mailable for a sample checkout failure; the runner captures it in the browser.",
             "useCase": "An operator verifies the report email includes useful context without unsafe diagnostic markup.",
-            "fixtureKind": "illustrative-catalogue",
-            "acceptance": "diagnostic-only"
+            "screenshotPath": "packages/exception-reports/docs/screenshots/exception-email-preview.png",
+            "url": "/screenshot-fixtures/exception-reports/email",
+            "user": false,
+            "waitFor": "body",
+            "fixtureKind": "documentation-outcome-fixture"
         }
     ]
 }

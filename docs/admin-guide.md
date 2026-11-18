@@ -23,7 +23,7 @@ This guide is for the developer or operator who configures exception delivery fo
 1. Leave IP address, user identity, stack traces, and route parameters disabled unless they are necessary for triage.
 2. Enable only the relevant `CAPELL_EXCEPTION_REPORTS_INCLUDE_*` variables.
 3. If route parameters are needed, set `CAPELL_EXCEPTION_REPORTS_ROUTE_PARAMETER_ALLOWLIST` to the exact parameter names; other route parameters stay out of the report.
-4. The sanitizer strips unsafe markup and redacts secret-like values, authorization values, cookies, tokens, and email addresses before delivery. This is a safety boundary, not permission to include unnecessary context.
+4. A database error is reduced to its SQLSTATE code in the stored record, the email, the digest, the webhook and the package's own log lines, so the SQL statement and its values never leave the application. This covers database errors raised through PDO. Errors from other stores, such as Redis or MongoDB, rely only on the general sanitizer below. A trace, when turned on, lists each call's file, line and function without its arguments. The sanitizer then strips unsafe markup and redacts secret-like values, authorisation values, cookies, tokens, and email addresses before delivery. Email addresses are redacted whatever alphabet they use and however they are written: accented and internationalised addresses, single-label hosts such as `localhost`, quoted local parts, IP-address hosts, JSON escapes, and an `@` that is percent-encoded (as in a request URL), an HTML entity, backslash-escaped or a full-width form. The value of an `email`, `e-mail` or `mail` query parameter is redacted too. Text after an `@` made only of digits and dots, such as `core@1.0`, is kept so version numbers stay readable. This is a safety boundary, not permission to include unnecessary context.
 
 ### How to triage a report
 
@@ -35,7 +35,7 @@ This guide is for the developer or operator who configures exception delivery fo
 
 Ask an authorised developer to follow the [database investigation recipe](extension-examples.md). It explains how to find a sanitised record, correlate application logs and check delivery separately. There is no report inbox in Capell admin.
 
-The host operator owns database access, backups and retention. Restrict access and agree a retention and deletion process. Turning persistence off stops future writes and does not delete existing records.
+The package deletes stored reports older than the retention window each day while the host scheduler runs. The host operator owns database access and backups. Restrict access and agree a retention and deletion process. Turning persistence off stops future writes and does not delete existing records.
 
 ### How to handle a flood of notifications
 

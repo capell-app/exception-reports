@@ -9,12 +9,14 @@ use Capell\Core\Facades\CapellCore;
 use Capell\Core\Support\Extensions\ExtensionLifecycleRepository;
 use Capell\Core\Support\Packages\AbstractPackageServiceProvider;
 use Capell\ExceptionReports\Actions\ReportExceptionByEmailAction;
+use Capell\ExceptionReports\Console\Commands\PruneExceptionReportsCommand;
 use Capell\ExceptionReports\Support\ExceptionReportMailSanitizer;
+use Capell\ExceptionReports\Support\ExceptionReportMessage;
 use Capell\ExceptionReports\Support\InactivePostmarkRecipientFailure;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Debug\ExceptionHandler as ExceptionHandlerContract;
 use Illuminate\Foundation\Exceptions\Handler;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Override;
 use Spatie\LaravelPackageTools\Package;
 use Throwable;
@@ -57,7 +59,20 @@ final class ExceptionReportsServiceProvider extends AbstractPackageServiceProvid
 
     // Enrol for late enable; handler observation must start before installation and provider boot.
     #[Override]
-    protected function bootInstalledRuntime(): void {}
+    protected function bootInstalledRuntime(): void
+    {
+        if ($this->app->runningInConsole()) {
+            $this->commands([PruneExceptionReportsCommand::class]);
+        }
+
+        // Stored reports are kept for persistence.retention_days; this deletes older ones.
+        $this->callAfterResolving(Schedule::class, static function (Schedule $schedule): void {
+            $schedule->command('capell:exception-reports-prune')
+                ->daily()
+                ->withoutOverlapping()
+                ->onOneServer();
+        });
+    }
 
     private function registerExceptionReporter(ExceptionHandlerContract $handler): null
     {
@@ -117,9 +132,9 @@ final class ExceptionReportsServiceProvider extends AbstractPackageServiceProvid
                 'Exception Reports failed to run the exception reporter.',
                 resolve(ExceptionReportMailSanitizer::class)->sanitizeLogContext([
                     'reporter_exception' => $reporterFailure::class,
-                    'reporter_message' => Str::limit($reporterFailure->getMessage(), 500, '...'),
+                    'reporter_message' => ExceptionReportMessage::of($reporterFailure, 500),
                     'original_exception' => $originalException::class,
-                    'original_message' => Str::limit($originalException->getMessage(), 500, '...'),
+                    'original_message' => ExceptionReportMessage::of($originalException, 500),
                     'original_file' => $originalException->getFile(),
                     'original_line' => $originalException->getLine(),
                 ]),

@@ -193,7 +193,13 @@ it('validates the manifest and marketplace assets', function (): void {
     expect($screenshotEntries)->not->toBeEmpty();
 
     foreach ($screenshotEntries as $screenshot) {
-        expect(File::exists($packagePath . '/' . exceptionReportsManifestString($screenshot, 'path')))->toBeTrue();
+        // Committed artefacts carry a package-relative path; runner captures carry a
+        // repository-relative screenshotPath.
+        $relativePath = array_key_exists('screenshotPath', $screenshot)
+            ? str(exceptionReportsManifestString($screenshot, 'screenshotPath'))->after('packages/exception-reports/')->toString()
+            : exceptionReportsManifestString($screenshot, 'path');
+
+        expect(File::exists($packagePath . '/' . $relativePath))->toBeTrue();
     }
 
     $emailScreenshot = collect($screenshots)
@@ -201,18 +207,16 @@ it('validates the manifest and marketplace assets', function (): void {
     $emailScreenshotEntry = collect($screenshotEntries)
         ->first(fn (array $screenshot): bool => ($screenshot['id'] ?? null) === 'exception-reports-email-preview');
 
+    // The email preview is a runner capture of the workbench fixture that renders the
+    // package's own mailable, so it is never also listed as a Marketplace screenshot.
     expect($emailScreenshot)->toBeNull()
         ->and($emailScreenshotEntry)->toBeArray()
-        ->and($emailScreenshotEntry['targetType'] ?? null)->toBe('artifact')
-        ->and($emailScreenshotEntry['target'] ?? null)->toBe('exception-reports-email-preview')
-        ->and($emailScreenshotEntry['fixtureKind'] ?? null)->toBe('illustrative-catalogue')
-        ->and($emailScreenshotEntry['path'] ?? null)->toBe('docs/screenshots/exception-email-preview.png')
-        ->and($emailScreenshotEntry['required'] ?? null)->toBeFalse()
-        ->and($emailScreenshotEntry['acceptance'] ?? null)->toBe('diagnostic-only')
+        ->and($emailScreenshotEntry['targetType'] ?? null)->toBe('frontend-url')
+        ->and($emailScreenshotEntry['url'] ?? null)->toBe('/screenshot-fixtures/exception-reports/email')
+        ->and($emailScreenshotEntry['fixtureKind'] ?? null)->toBe('documentation-outcome-fixture')
+        ->and($emailScreenshotEntry['screenshotPath'] ?? null)->toBe('packages/exception-reports/docs/screenshots/exception-email-preview.png')
+        ->and($emailScreenshotEntry['required'] ?? null)->toBeTrue()
+        ->and($emailScreenshotEntry)->not->toHaveKey('path')
         ->and(File::exists($packagePath . '/docs/screenshots/exception-email-preview.png'))->toBeTrue()
         ->and(collect($screenshots)->pluck('path')->all())->not->toContain('docs/screenshots/exception-email-preview.png');
-
-    foreach (['url', 'scenario', 'screenshotPath', 'colorSchemes'] as $runnerField) {
-        expect($emailScreenshotEntry)->not->toHaveKey($runnerField);
-    }
 });

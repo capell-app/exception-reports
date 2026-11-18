@@ -1,6 +1,6 @@
 {
     "name": "capell-app/exception-reports",
-    "description": "Email unhandled exception reports from Capell with sanitized request, route, user, and stack-trace context.",
+    "description": "Email and webhook alerts for unhandled exceptions in Capell sites, with throttling for repeat errors.",
     "type": "library",
     "license": "proprietary",
     "autoload": {

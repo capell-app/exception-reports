@@ -6,7 +6,7 @@
     "kind": "package",
     "capellApiVersion": "^1.0",
     "version": "1.0.0",
-    "description": "Receive sanitised unhandled-exception reports by queued email or signed webhook, with rate limiting and grouped digests.",
+    "description": "Emails the error, file and line when your Capell site hits an error it didn't handle, with an optional webhook for your own tools.",
     "product": {
         "group": "Capell Operations",
         "tier": "free",
@@ -36,6 +36,22 @@
             "class": "Capell\\ExceptionReports\\Health\\ExceptionReportsHealthCheck"
         },
         {
+            "type": "console-command",
+            "class": "Capell\\ExceptionReports\\Manifest\\ExceptionReportsConsoleCommandsContribution",
+            "commands": ["capell:exception-reports-prune"],
+            "commandClasses": [
+                "Capell\\ExceptionReports\\Console\\Commands\\PruneExceptionReportsCommand"
+            ]
+        },
+        {
+            "type": "scheduled-job",
+            "class": "Capell\\ExceptionReports\\Manifest\\ExceptionReportsPruneScheduleContribution",
+            "command": "capell:exception-reports-prune",
+            "name": "capell-exception-reports-prune",
+            "frequency": "daily",
+            "retentionDaysConfig": "capell-exception-reports.persistence.retention_days"
+        },
+        {
             "type": "migration",
             "class": "Capell\\ExceptionReports\\Manifest\\ExceptionReportsMigrationsContribution",
             "requiredTables": ["exception_reports"],
@@ -54,7 +70,8 @@
         "install": null,
         "setup": null,
         "demo": null,
-        "doctor": null
+        "doctor": null,
+        "prune": "capell:exception-reports-prune"
     },
     "actions": {
         "reportExceptionByEmail": "Capell\\ExceptionReports\\Actions\\ReportExceptionByEmailAction",
@@ -80,7 +97,8 @@
             "redactedOutputClasses": [
                 "Capell\\ExceptionReports\\Actions\\RecordExceptionReportAction",
                 "Capell\\ExceptionReports\\Actions\\ReportExceptionByEmailAction",
-                "Capell\\ExceptionReports\\Support\\ExceptionReportMailSanitizer"
+                "Capell\\ExceptionReports\\Support\\ExceptionReportMailSanitizer",
+                "Capell\\ExceptionReports\\Support\\ExceptionReportMessage"
             ],
             "plaintextJustifications": []
         },
@@ -130,29 +148,33 @@
         "privateDocsRequested": false
     },
     "marketplace": {
-        "summary": "Email and optional webhook alerting for unhandled Capell exceptions, with request, route, user, and stack-trace context sanitized for safe operator triage.",
-        "description": "Exception Reports gives operators a direct email signal when a Capell app reports an unhandled exception, plus an optional signed webhook payload for approved HTTPS incident channels. Queue payloads are sanitized before dispatch and normally contain only exception metadata plus request method, route and route template. IP address, user identity, stack traces and route parameters are opt-in. Signature and global rate limits keep repeated failures from flooding the queue, with optional grouped digest emails for repeated suppressed signatures.",
-        "problem": "Unhandled errors can reach our visitors before our operators know there is a problem.",
-        "outcome": "Our operators receive configured exception reports for investigation.",
+        "summary": "You hear about a crash in your inbox, often before a client tells you, and repeat errors are held back so one fault doesn't bury you.",
+        "description": "Sends an email when your Capell site hits an error it didn't handle, naming the error, file, line and the page or command involved. By default it sends one email per identical error every 15 minutes and ten an hour in total, and a developer sets any other address and the optional webhook.",
+        "problem": "The client told us the site was broken before we knew anything was wrong.",
+        "outcome": "An email arrives naming the error, the file and line, and the app and page it came from.",
         "faq": [
             {
-                "question": "Where are exception recipients configured?",
-                "answer": "Recipients and delivery behaviour are configured at application level."
+                "question": "Where do the emails go, and can I change that in the admin?",
+                "answer": "They go to your site's sending address. The admin has no setting for it, so picking another address needs a developer."
             },
             {
-                "question": "Is there an admin page for reports?",
-                "answer": "The package has no admin resource."
+                "question": "Is there a page where I can look back at past errors?",
+                "answer": "No. There's no page of errors and no way to mark one resolved. Each exception is saved as a hidden record and deleted after 30 days by default, if your server's scheduler is running."
             },
             {
-                "question": "Which sensitive details are included by default?",
-                "answer": "Request secrets are sanitised; trace, identity, IP and route parameter details are opt-in."
+                "question": "Will one bad day fill my inbox?",
+                "answer": "No. By default identical errors send one email every 15 minutes, and at most ten emails go out an hour. Anything held back is saved but not emailed."
+            },
+            {
+                "question": "Do the emails include visitors' personal details?",
+                "answer": "Not by default. Each email names the error, the file and line, the environment and the page or command. A developer can switch on the stack trace, the visitor's IP address and the signed-in person's identity."
             }
         ],
         "screenshots": [
             {
                 "path": "docs/assets/marketplace/extension-card.svg",
-                "alt": "Exception Reports extension preview image",
-                "caption": "Exception Reports extension preview for Marketplace cards."
+                "alt": "Marketplace card titled Exception Reports with two abstract report windows beside a catch, sanitise and notify diagram",
+                "caption": "The card that represents Exception Reports on its Marketplace listing."
             }
         ],
         "categories": ["operations", "monitoring", "email"]

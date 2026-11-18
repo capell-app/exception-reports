@@ -4,10 +4,10 @@
     "scenarios": {
         "default": {
             "source": {
-                "ref": "c92ce184be4d91c372f35ca125ea25f6c1308599",
-                "commit": "c92ce184be4d91c372f35ca125ea25f6c1308599",
+                "ref": "HEAD",
+                "commit": "8dfe565a8938ebb2f3296a77a20e89059123544b",
                 "providers": {
-                    "Providers/ExceptionReportsServiceProvider.php": "b121e04920a6f63d7ab516487560c7a45d285c4a7cdb846fa4a6bd3de3f55d4d",
+                    "Providers/ExceptionReportsServiceProvider.php": "94fe2c3f8b09643632f52df3898f7f904e21d4a5d7cd83dc7d4d88a10dc72889",
                     "Providers/MigrationMetadataServiceProvider.php": "417b7f1f3824ea8135c2d51238bbc3630cf427133d8169eb96e17f8888e3e1f3"
                 },
                 "configure": null
@@ -27,6 +27,9 @@
                         "shared": true
                     }
                 },
+                "commands": {
+                    "capell:exception-reports-prune": "Capell\\ExceptionReports\\Console\\Commands\\PruneExceptionReportsCommand"
+                },
                 "config-defaults": {
                     "capell-exception-reports.php": {
                         "digest.enabled": false,
@@ -34,6 +37,7 @@
                         "digest.window_seconds": 3600,
                         "enabled": true,
                         "persistence.enabled": true,
+                        "persistence.retention_days": 30,
                         "persistence.table": "exception_reports",
                         "privacy.include_ip_address": false,
                         "privacy.include_trace": false,
@@ -65,6 +69,7 @@
                     "capell-exception-reports.enabled",
                     "capell-exception-reports.persistence",
                     "capell-exception-reports.persistence.enabled",
+                    "capell-exception-reports.persistence.retention_days",
                     "capell-exception-reports.persistence.table",
                     "capell-exception-reports.privacy",
                     "capell-exception-reports.privacy.include_ip_address",
@@ -117,6 +122,15 @@
                         }
                     }
                 },
+                "schedule": [
+                    [
+                        "'<php>' 'artisan' capell:exception-reports-prune",
+                        "0 0 * * *",
+                        null,
+                        true,
+                        null
+                    ]
+                ],
                 "views": {
                     "capell-exception-reports": ["<package>/resources/views"]
                 }
@@ -142,6 +156,7 @@
                         "digest.window_seconds": 3600,
                         "enabled": true,
                         "persistence.enabled": true,
+                        "persistence.retention_days": 30,
                         "persistence.table": "exception_reports",
                         "privacy.include_ip_address": false,
                         "privacy.include_trace": false,
@@ -173,6 +188,7 @@
                     "capell-exception-reports.enabled",
                     "capell-exception-reports.persistence",
                     "capell-exception-reports.persistence.enabled",
+                    "capell-exception-reports.persistence.retention_days",
                     "capell-exception-reports.persistence.table",
                     "capell-exception-reports.privacy",
                     "capell-exception-reports.privacy.include_ip_address",
