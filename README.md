@@ -10,14 +10,14 @@ By default, identical errors send one email every 15 minutes, and at most ten em
 
 Each email names the error, the file and line, and the environment. It names the page or command by its internal name, not its web address. The subject line carries your app name, the error type and that page or command, so you know where the trouble is before opening it.
 
-- **Price and availability:** Check current availability and price on the [Capell Marketplace listing](https://capell.app/extensions/exception-reports).
-- **Licence:** Check the licence terms on the [Capell Marketplace listing](https://capell.app/extensions/exception-reports).
-- **Requires:** `PHP ^8.4`, `capell-app/core ^1.0.75`, `laravel/framework ^12.61.1|^13.12.0`, `lorisleiva/laravel-actions ^2.8`, `spatie/laravel-package-tools ^1.14.1`.
-- **Install:** `composer require capell-app/exception-reports`.
+- **Price and availability:** Check current availability and price on the [Capell Marketplace listing](https://capell.app/marketplace/extensions/exception-reports).
+- **Licence:** Check the licence terms on the [Capell Marketplace listing](https://capell.app/marketplace/extensions/exception-reports).
+- **Requires:** `PHP ^8.4`, `capell-app/core ^1.0.79`, `laravel/framework ^12.61.1|^13.12.0`, `lorisleiva/laravel-actions ^2.8`, `spatie/laravel-package-tools ^1.14.1`.
+- **Install:** `composer require capell-app/exception-reports:@beta`.
 
 ## Quick Start
 
-1. Install the package: `composer require capell-app/exception-reports`.
+1. Install the package: `composer require capell-app/exception-reports:@beta`.
 2. Run `php artisan list capell` and confirm these commands are listed: `capell:exception-reports-prune`. Run any of them with `--help` to see its options.
 
 ## For Developers
@@ -31,7 +31,7 @@ A typed report boundary and sanitizer keep request secrets out of queued payload
 
 ## Limits And Pitfalls
 
-- Install the required Capell packages at the versions in `composer.json`: `capell-app/core ^1.0.75`.
+- Install the required Capell packages at the versions in `composer.json`: `capell-app/core ^1.0.79`.
 - Run migrations before opening package resources or public routes.
 - Keep the host Laravel scheduler running so package-registered schedules can execute: `capell:exception-reports-prune (daily; package registered)`.
 

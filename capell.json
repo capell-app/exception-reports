@@ -172,6 +172,11 @@
         ],
         "screenshots": [
             {
+                "path": "docs/assets/marketplace/listing-exception-email-preview.png",
+                "alt": "Sample Exception Reports email showing the error, file and request details for a checkout failure",
+                "caption": "A sample exception email names the error and where it occurred, with the request method, path and route."
+            },
+            {
                 "path": "docs/assets/marketplace/extension-card.svg",
                 "alt": "Marketplace card titled Exception Reports with two abstract report windows beside a catch, sanitise and notify diagram",
                 "caption": "The card that represents Exception Reports on its Marketplace listing."

@@ -47,146 +47,85 @@
 {{ $safeReport['summary']['reported_at'] }}
 </x-mail::panel>
 
-## {{ __('capell-exception-reports::mail.request') }}
+@php
+    $present = static fn (array $rows): array => array_filter(
+        $rows,
+        static fn (mixed $value): bool => is_scalar($value) && trim((string) $value) !== '' && trim((string) $value) !== 'n/a',
+    );
+    $headingStyle = 'margin: 32px 0 12px; font-size: 18px; line-height: 1.3;';
+    $tableStyle = 'width: 100%; border-collapse: collapse; margin: 0 0 8px;';
+    $labelStyle = 'width: 30%; padding: 8px 10px 8px 0; text-align: left; vertical-align: top;';
+    $valueStyle = 'padding: 8px 0; vertical-align: top; word-break: break-word; overflow-wrap: anywhere;';
+    $blockStyle = 'white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; font-size: 12px; line-height: 1.45; margin: 0 0 8px;';
+    $sections = [
+        __('capell-exception-reports::mail.request') => $present([
+            __('capell-exception-reports::mail.method') => $safeReport['request']['method'] ?? null,
+            __('capell-exception-reports::mail.url') => $safeReport['request']['url'] ?? null,
+            __('capell-exception-reports::mail.path') => $safeReport['request']['path'] ?? null,
+            __('capell-exception-reports::mail.route') => $safeReport['request']['route_name'] ?? null,
+            __('capell-exception-reports::mail.action') => $safeReport['request']['route_action'] ?? null,
+            __('capell-exception-reports::mail.ip_address') => $safeReport['request']['ip_address'] ?? null,
+            __('capell-exception-reports::mail.accept') => $safeReport['request']['accept'] ?? null,
+            __('capell-exception-reports::mail.request_id') => $safeReport['request']['request_id'] ?? null,
+        ]),
+        __('capell-exception-reports::mail.user') => $present([
+            __('capell-exception-reports::mail.id') => $safeReport['user']['id'] ?? null,
+            __('capell-exception-reports::mail.name') => $safeReport['user']['name'] ?? null,
+            __('capell-exception-reports::mail.email') => $safeReport['user']['email'] ?? null,
+        ]),
+    ];
+    $routeParameters = $safeReport['request']['route_parameters'] ?? [];
+    $consoleRows = $present([
+        __('capell-exception-reports::mail.command') => $safeReport['console']['command'] ?? null,
+        __('capell-exception-reports::mail.arguments') => $safeReport['console']['arguments'] ?? null,
+        __('capell-exception-reports::mail.command_line') => $safeReport['console']['command_line'] ?? null,
+    ]);
+    $trace = trim((string) ($safeReport['trace'] ?? ''));
+@endphp
 
-<table style="width: 100%; border-collapse: collapse">
+@foreach ($sections as $title => $rows)
+@if ($rows !== [])
+<h2 style="{{ $headingStyle }}">{{ $title }}</h2>
+
+<table style="{{ $tableStyle }}">
 <tbody>
-@foreach ([
-    __('capell-exception-reports::mail.method') => $safeReport['request']['method'] ?? 'n/a',
-    __('capell-exception-reports::mail.url') => $safeReport['request']['url'] ?? 'n/a',
-    __('capell-exception-reports::mail.route') => $safeReport['request']['route_name'] ?? 'n/a',
-    __('capell-exception-reports::mail.action') => $safeReport['request']['route_action'] ?? 'n/a',
-    __('capell-exception-reports::mail.referer') => $safeReport['request']['referer'] ?? 'n/a',
-    __('capell-exception-reports::mail.browser') => $safeReport['request']['browser'] ?? 'n/a',
-    __('capell-exception-reports::mail.ip_address') => $safeReport['request']['ip_address'] ?? 'n/a',
-    __('capell-exception-reports::mail.accept') => $safeReport['request']['accept'] ?? 'n/a',
-    __('capell-exception-reports::mail.request_id') => $safeReport['request']['request_id'] ?? 'n/a',
-] as $label => $value)
+@foreach ($rows as $label => $value)
 <tr>
-<th
-style="
-width: 30%;
-padding: 8px 10px 8px 0;
-text-align: left;
-vertical-align: top;
-"
->
-{{ $label }}
-</th>
-<td
-style="
-padding: 8px 0;
-vertical-align: top;
-word-break: break-word;
-overflow-wrap: anywhere;
-"
->
-{{ $value }}
-</td>
+<th style="{{ $labelStyle }}">{{ $label }}</th>
+<td style="{{ $valueStyle }}">{{ $value }}</td>
 </tr>
 @endforeach
 </tbody>
 </table>
-
-## {{ __('capell-exception-reports::mail.user') }}
-
-<table style="width: 100%; border-collapse: collapse">
-<tbody>
-@foreach ([
-    __('capell-exception-reports::mail.id') => $safeReport['user']['id'] ?? 'guest',
-    __('capell-exception-reports::mail.name') => $safeReport['user']['name'] ?? 'n/a',
-    __('capell-exception-reports::mail.email') => $safeReport['user']['email'] ?? 'n/a',
-] as $label => $value)
-<tr>
-<th
-style="
-width: 30%;
-padding: 8px 10px 8px 0;
-text-align: left;
-vertical-align: top;
-"
->
-{{ $label }}
-</th>
-<td
-style="
-padding: 8px 0;
-vertical-align: top;
-word-break: break-word;
-overflow-wrap: anywhere;
-"
->
-{{ $value }}
-</td>
-</tr>
+@endif
 @endforeach
-</tbody>
-</table>
 
-@if ($safeReport['request']['route_parameters'] !== [])
-## {{ __('capell-exception-reports::mail.route_parameters') }}
+@if ($routeParameters !== [])
+<h2 style="{{ $headingStyle }}">{{ __('capell-exception-reports::mail.route_parameters') }}</h2>
 
-<pre
-style="
-white-space: pre-wrap;
-word-break: break-word;
-overflow-wrap: anywhere;
-font-size: 12px;
-line-height: 1.45;
-"
->
-{{ json_encode($safeReport['request']['route_parameters'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+<pre style="{{ $blockStyle }}">{{ json_encode($routeParameters, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
 @endif
 
-@if (($safeReport['console']['command'] ?? 'n/a') !== 'n/a' || ($safeReport['console']['command_line'] ?? 'n/a') !== 'n/a')
-## {{ __('capell-exception-reports::mail.console') }}
+@if ($consoleRows !== [])
+<h2 style="{{ $headingStyle }}">{{ __('capell-exception-reports::mail.console') }}</h2>
 
-<table style="width: 100%; border-collapse: collapse">
+<table style="{{ $tableStyle }}">
 <tbody>
-@foreach ([
-    __('capell-exception-reports::mail.command') => $safeReport['console']['command'] ?? 'n/a',
-    __('capell-exception-reports::mail.arguments') => $safeReport['console']['arguments'] ?? 'n/a',
-    __('capell-exception-reports::mail.command_line') => $safeReport['console']['command_line'] ?? 'n/a',
-] as $label => $value)
+@foreach ($consoleRows as $label => $value)
 <tr>
-<th
-style="
-width: 30%;
-padding: 8px 10px 8px 0;
-text-align: left;
-vertical-align: top;
-"
->
-{{ $label }}
-</th>
-<td
-style="
-padding: 8px 0;
-vertical-align: top;
-word-break: break-word;
-overflow-wrap: anywhere;
-"
->
-{{ $value }}
-</td>
+<th style="{{ $labelStyle }}">{{ $label }}</th>
+<td style="{{ $valueStyle }}">{{ $value }}</td>
 </tr>
 @endforeach
 </tbody>
 </table>
 @endif
 
-## {{ __('capell-exception-reports::mail.stack_trace') }}
+@if ($trace !== '')
+<h2 style="{{ $headingStyle }}">{{ __('capell-exception-reports::mail.stack_trace') }}</h2>
 
-<pre
-style="
-white-space: pre-wrap;
-word-break: break-word;
-overflow-wrap: anywhere;
-font-size: 12px;
-line-height: 1.45;
-"
->
-{{ $safeReport['trace'] }}</pre>
+<pre style="{{ $blockStyle }}">{{ $trace }}</pre>
+@endif
 
 Thanks,
 <br />

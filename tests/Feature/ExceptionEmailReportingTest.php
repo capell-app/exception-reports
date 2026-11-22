@@ -536,6 +536,32 @@ it('includes request user and route context', function (): void {
     });
 });
 
+it('does not show Referer or Browser rows the report never fills in', function (): void {
+    Mail::fake();
+
+    Route::get('/exception-report-rows', function (): string {
+        ReportExceptionByEmailAction::run(new RuntimeException('Rows failed'));
+
+        return 'reported';
+    })->name('exception-report.rows');
+
+    $this
+        ->withHeaders([
+            'Referer' => 'https://capell.test/dashboard',
+            'User-Agent' => 'Mozilla/5.0 Exception Reporter Test Browser',
+        ])
+        ->get('/exception-report-rows')
+        ->assertOk();
+
+    Mail::assertQueued(UnhandledExceptionReported::class, function (UnhandledExceptionReported $mail): bool {
+        $html = (string) $mail->render();
+
+        return str_contains($html, 'exception-report.rows')
+            && ! str_contains($html, 'Referer')
+            && ! str_contains($html, 'Browser');
+    });
+});
+
 it('includes console command context when reporting artisan option parsing failures', function (): void {
     Mail::fake();
 

@@ -1,0 +1,38 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'default_subject' => 'Unbehandelte Ausnahme gemeldet',
+    'unsafe_warning' => 'Unsichere Diagnoseinhalte wurden entfernt.',
+    'affected_fields' => 'Betroffene Felder: :fields',
+    'intro' => 'In :app wurde eine unbehandelte Ausnahme gemeldet.',
+    'digest' => 'Zusammenfassung',
+    'digest_summary' => 'In dem aktuellen Zeitfenster von :window Sekunden stimmten :count unterdrückte Meldungen mit der Signatur dieser Ausnahme überein.',
+    'digest_threshold' => 'Schwellenwert der Zusammenfassung',
+    'digest_grouped_at' => 'Gruppiert am',
+    'environment' => 'Umgebung',
+    'exception' => 'Ausnahme',
+    'message' => 'Meldung',
+    'location' => 'Ort',
+    'reported_at' => 'Gemeldet am',
+    'request' => 'Anfrage',
+    'method' => 'Methode',
+    'url' => 'URL',
+    'path' => 'Pfad',
+    'route' => 'Route',
+    'action' => 'Aktion',
+    'ip_address' => 'IP-Adresse',
+    'accept' => 'Accept',
+    'request_id' => 'Anfrage-ID',
+    'console' => 'Konsole',
+    'command' => 'Befehl',
+    'arguments' => 'Argumente',
+    'command_line' => 'Befehlszeile',
+    'user' => 'Benutzer',
+    'id' => 'ID',
+    'name' => 'Name',
+    'email' => 'E-Mail',
+    'route_parameters' => 'Routenparameter',
+    'stack_trace' => 'Stack-Trace',
+];
