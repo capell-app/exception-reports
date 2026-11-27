@@ -6,6 +6,7 @@
     "kind": "package",
     "capellApiVersion": "^1.0",
     "version": "1.0.0",
+    "launchStatus": "preview",
     "description": "Emails the error, file and line when your Capell site hits an error it didn't handle, with an optional webhook for your own tools.",
     "product": {
         "group": "Capell Operations",
